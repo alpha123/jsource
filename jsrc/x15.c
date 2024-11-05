@@ -124,7 +124,7 @@ char *toascbuf(wchar_t *src);
 #undef atop
 #endif
 
-#ifndef ANDROID
+#if !defined(ANDROID) && !defined(__QNX__)
 #undef MAX     /* defined in sys/param.h */
 #undef MIN     /* defined in sys/param.h */
 #endif

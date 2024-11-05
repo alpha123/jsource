@@ -12,7 +12,7 @@ if [ "" = "$CFLAGS" ]; then
  case "$_DEBUG" in
   3) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g";;
-  2) OPTLEVEL=" -O0 -ggdb "
+  2) OPTLEVEL=" -Og -ggdb "
    NASM_FLAGS="-g";;
   1) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g"
@@ -51,11 +51,20 @@ case "$jplatform64" in
 	 macmin="-isysroot $(xcrun --sdk macosx --show-sdk-path) -arch x86_64 -mmacosx-version-min=10.6";;
 	openbsd/*) make=gmake;;
 	freebsd/*) make=gmake;;
+	qnx/j64arm)
+	 CC="ntoaarch64-gcc"
+	 AR="ntoaarch64-ar"
+	 USE_PYXES=0;;
+	qnx/j64*)
+	 CC="ntox86_64-gcc"
+	 AR="ntox86_64-ar"
+	 USE_PYXES=0;;
 esac
 make="${make:=make}"
 
 CC=${CC-$(which cc clang gcc 2>/dev/null | head -n1 | xargs basename)}
-compiler=$(readlink -f $(which $CC) || which $CC)
+#compiler=$(readlink -f $(which $CC) || which $CC)
+compiler="$(which $CC)"
 echo "CC=$CC"
 echo "compiler=$compiler"
 
@@ -198,6 +207,14 @@ LDFLAGS=" -Wl,-stack_size,0xc00000 -ldl $LDTHREAD $macmin "
 darwin/j64*)
 CFLAGS="$common $macmin "
 LDFLAGS=" -ldl $LDTHREAD $macmin "
+;;
+qnx/j64arm)
+CFLAGS="$common -march=armv8-a+crc"
+LDFLAGS=" $LDTHREAD "
+;;
+qnx/j64*)
+CFLAGS="$common"
+LDFLAGS=" $LDTHREAD "
 ;;
 windows/j32)
 TARGET=jconsole.exe

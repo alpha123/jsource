@@ -58,10 +58,15 @@
 #define _GNU_SOURCE
 
 /* Define to 1 if you have the <link.h> header file. */
+#if defined(__QNX__)
+//#undef HAVE_LINK_H
+#define HAVE_SYS_LINK_H 1
+#else
 #define HAVE_LINK_H 1
 
 /* Define to 1 if you have the <sys/link.h> header file. */
 //#undef HAVE_SYS_LINK_H
+#endif
 
 /* Define to 1 if you have the `lstat' function. */
 #define HAVE_LSTAT 1

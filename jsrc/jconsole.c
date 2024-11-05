@@ -267,14 +267,14 @@ JST* jt;
 
 int main(int argc, char* argv[])
 {
-#if !defined(_WIN32) && !defined(__OpenBSD__) && !defined(__FreeBSD__) && !defined(__wasm__) //temporary
+#if !defined(_WIN32) && !defined(__OpenBSD__) && !defined(__FreeBSD__) && !defined(__QNX__) && !defined(__wasm__) //temporary
  signal(SIGSEGV,sigsegv);
  signal(SIGILL,sigsegv);
 #ifdef __APPLE__
  signal(SIGTRAP,sigsegv); //catch SEGFAULT
 #endif
 #endif
-#if !(defined(ANDROID)||defined(_WIN32))
+#if !(defined(ANDROID)||defined(__QNX__)||defined(_WIN32))
  locale_t loc=0;
  if ((loc = newlocale(LC_ALL_MASK, "", (locale_t)0 )))
   if ((loc = newlocale(LC_NUMERIC_MASK, "C", loc ))) uselocale(loc);
@@ -395,7 +395,7 @@ int main(int argc, char* argv[])
  r=jedo((char*)"RUN4 ddall[ECHOFILENAME=:1[(0!:0)<'test/tsu.ijs'");
 #endif
  jefree();
-#if !(defined(ANDROID)||defined(_WIN32))
+#if !(defined(ANDROID)||defined(__QNX__)||defined(_WIN32))
  if(loc)freelocale(loc);
 #endif
  return r;

@@ -74,6 +74,8 @@ extern int __ulock_wake(uint32_t operation, void *addr, uint64_t wake_value);
 #elif defined(__OpenBSD__)
 #include <sys/time.h>
 #include <sys/futex.h>
+#elif defined(__QNX__)
+#include <pthread.h>
 #else
 #error no futex support for your platform
 #endif //_WIN32

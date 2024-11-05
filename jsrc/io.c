@@ -253,8 +253,9 @@ Similarly, calls to external libraries MUST be preceded by a vzeroupper, to put 
 #if !defined(__wasm__) && !defined(TARGET_IOS)
 #include <dlfcn.h>
 #endif
-#ifdef __MACH__
+#if defined(__MACH__)
 #include <mach-o/dyld.h>
+#elif defined(__QNX__)
 #else // Linux
 #include <link.h>
 #endif

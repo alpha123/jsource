@@ -7,7 +7,7 @@
 #include <windows.h>
 #include <winbase.h>
 #else
-#define _LARGEFILE64_SOURCE 
+#define _LARGEFILE64_SOURCE 1
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>

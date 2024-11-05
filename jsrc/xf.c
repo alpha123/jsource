@@ -17,7 +17,9 @@
 #endif
 #include <sys/types.h>
 #include <unistd.h>
-#if !defined(__wasm__)
+#if defined(__QNX__)
+#include <ftw.h>
+#elif !defined(__wasm__)
 #include <fts.h>
 #endif
 #define filesep '/'
@@ -375,7 +377,29 @@ char p[_MAX_PATH]; extern C sopath[];
  R cstr(p);
 }
 
-#if (SYS & SYS_UNIX) && !defined(__wasm__)
+#if defined(__QNX__)
+#define JNFTW_FD_LIMIT 64
+int nftwwalk(const char *fname, const struct stat64 *st, int flags, struct FTW *ftw)
+{
+ int ret=0;
+ switch (flags) {
+ case FTW_DP:
+ case FTW_F:
+ case FTW_SL:
+ case FTW_SLN:
+  if (remove(fname) < 0) {
+   ret=-1;
+  }
+ }
+ return ret;
+}
+int rmdir2(const char *dir)
+{
+ int ret=0;
+ ret=nftw64(dir, nftwwalk, JNFTW_FD_LIMIT, FTW_DEPTH | FTW_PHYS | FTW_MOUNT);
+ return ret;
+}
+#elif (SYS & SYS_UNIX) && !defined(__wasm__)
 int rmdir2(const char *dir)
 {
  int ret=0;

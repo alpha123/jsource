@@ -94,6 +94,7 @@ define one of the following in the build as required
 #define SYS_MACOSX          4194304L        /* GCC (CC)                    */
 #define SYS_OPENBSD         8388608L        /* GCC                         */
 #define SYS_WASM            16777216L       /* clang                       */
+#define SYS_QNX             33554432L       /* GCC                         */
 
 #define SY_WIN32            0    /* any windows intel Visual Studio        */
 #define SY_WINCE            0    /* any windows ce versions                */
@@ -103,13 +104,14 @@ define one of the following in the build as required
 #define SY_FREEBSD          0    /* any freebsd version                    */
 #define SY_OPENBSD          0    /* any openbsd version                    */
 #define SY_WASM             0    /* any wasm version                       */
+#define SY_QNX              0    /* qnx version >= 8.0                     */
 
 #define SYS_DOS             (SYS_PC + SYS_PC386 + SYS_PCWIN)
 
 #define SYS_UNIX            (SYS_ATT3B1 + SYS_DEC5500 + SYS_IBMRS6000 + \
                              SYS_MIPS + SYS_NEXT + SYS_SGI + SYS_SUN3 + \
                              SYS_SUN4 + SYS_VAX + SYS_LINUX + SYS_MACOSX + SYS_OPENBSD + SYS_WASM + \
-                             SYS_FREEBSD + SYS_NETBSD + SYS_SUNSOL2 + SYS_HPUX)
+                             SYS_FREEBSD + SYS_NETBSD + SYS_SUNSOL2 + SYS_HPUX + SYS_QNX)
 
 #if defined(__FreeBSD__)
 #define SYS SYS_FREEBSD
@@ -125,6 +127,12 @@ define one of the following in the build as required
 #define SYS SYS_OPENBSD
 #undef SY_OPENBSD
 #define SY_OPENBSD 1
+#endif
+
+#if defined(__QNX__)
+#define SYS SYS_QNX
+#undef SY_QNX
+#define SY_QNX 1
 #endif
 
 #if defined(__wasm__)
@@ -218,7 +226,7 @@ define one of the following in the build as required
 #endif
 
 #ifndef SYS     /* must be defined */
- error: "SYS must be defined"
+#error "SYS must be defined"
 #endif
 
 // map C_?? config to old stuff until it is no longer necessary

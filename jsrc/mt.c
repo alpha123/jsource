@@ -142,6 +142,9 @@ I jfutex_waitn(UI4 *p,UI4 v,UI ns){
  if(errno==ETIMEDOUT)R -1;
  if(errno==EAGAIN||errno==EINTR||errno==ECANCELED)R 0;
  R EVFACE;}
+#elif defined(__QNX__)
+void jfutex_wake1(UI4 *p){SyncCondvarSignal_r(p,0);}
+void jfutex_wakea(UI4 *p){SyncCondvarSignal_r(p,1);}
 #endif
 
 #if !defined(__linux__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) //no native waken on other platforms

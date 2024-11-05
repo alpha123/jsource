@@ -4814,7 +4814,7 @@ static int
 #ifdef __i386__
 __attribute__ ((__force_align_arg_pointer__))
 #endif
-phdr_callback (struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
+phdr_callback (const struct dl_phdr_info *info, size_t size ATTRIBUTE_UNUSED,
 	       void *pdata)
 {
   struct phdr_data *pd = (struct phdr_data *) pdata;

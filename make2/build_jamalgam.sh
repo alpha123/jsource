@@ -12,7 +12,7 @@ if [ "" = "$CFLAGS" ]; then
  case "$_DEBUG" in
   3) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g";;
-  2) OPTLEVEL=" -O0 -ggdb -DOPTMO0 "
+  2) OPTLEVEL=" -Og -ggdb -DOPTMO0 "
    NASM_FLAGS="-g";;
   1) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g"
@@ -54,6 +54,14 @@ case "$jplatform64" in
 	 macmin="-isysroot $(xcrun --sdk macosx --show-sdk-path) -arch x86_64 -mmacosx-version-min=10.6";;
 	openbsd/*) make=gmake;;
 	freebsd/*) make=gmake;;
+	qnx/j64arm)
+	 CC="ntoaarch64-gcc"
+	 AR="ntoaarch64-ar"
+	 USE_PYXES=0;;
+	qnx/j64*)
+	 CC="ntox86_64-gcc"
+	 AR="ntox86_64-ar"
+	 USE_PYXES=0;;
  wasm*)
 	 USE_OPENMP=0
 	 LDTHREAD=" -pthread "
@@ -62,7 +70,8 @@ esac
 make="${make:=make}"
 
 CC=${CC-"$(which cc clang gcc 2>/dev/null | head -n1 | xargs basename)"}
-compiler="$(readlink -f "$(which $CC)" || which $CC)"
+#compiler="$(readlink -f "$(which $CC)" || which $CC)"
+compiler="$(which $CC)"
 echo "CC=$CC"
 echo "compiler=$compiler"
 
@@ -95,7 +104,7 @@ fi
 
 if [ -z "${compiler##*gcc*}" ] || [ -z "${CC##*gcc*}" ]; then
  # gcc
- common="$OPENMP -fPIC $OPTLEVEL -falign-functions=4 -fvisibility=hidden -fno-strict-aliasing -fwrapv -fno-stack-protector -flax-vector-conversions \
+ common="$OPENMP -fPIC $OPTLEVEL -falign-functions=4 -fvisibility=hidden -fno-strict-aliasing -fwrapv -fno-stack-protector -flax-vector-conversions -ffp-contract=off \
  -Werror -Wextra -Wno-unknown-warning-option \
  -Wno-attributes \
  -Wno-cast-function-type \
@@ -598,6 +607,54 @@ case $jplatform64 in
   FLAGS_SLEEF=" -DENABLE_SSE2 "
   FLAGS_BASE64=""
  ;;
+ 
+ qnx/j64arm) # qnx arm64
+  TARGET=jamalgam
+  CFLAGS="$common -march=armv8-a+crc -DC_CRC32C=1 "    # mno-outline-atomics unavailable on clang-7
+  LDFLAGS=" -lm $LDOPENMP $LDTHREAD"
+  OBJS_AESARM=" aes-arm.o "
+  SRC_ASM="${SRC_ASM_RASPI}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_ADVSIMD "
+  FLAGS_BASE64=" -DHAVE_NEON64=1 "
+ ;;
+
+ qnx/j64avx512*) # qnx intel 64bit avx512
+  TARGET=jamalgam
+  CFLAGS="$common -DC_AVX2=1 -DC_AVX512=1 "
+  LDFLAGS=" -lm $LDOPENMP $LDTHREAD"
+  CFLAGS_SIMD=" -march=skylake-avx512 -mavx2 -mfma -mbmi -mbmi2 -mlzcnt -mmovbe -mpopcnt -mno-vzeroupper "
+  OBJS_FMA=" gemm_int-fma.o "
+  OBJS_AESNI=" aes-ni.o "
+  SRC_ASM="${SRC_ASM_LINUXAVX512}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_AVX2 "  #ditto
+  FLAGS_BASE64=" -DHAVE_AVX2=1 -DBASE64_AVX2_USE_ASM=1 " #ditto
+ ;;
+
+ qnx/j64avx2*) # qnx intel 64bit avx2
+  TARGET=jamalgam
+  CFLAGS="$common -DC_AVX2=1 "
+  LDFLAGS=" -lm $LDOPENMP $LDTHREAD"
+  CFLAGS_SIMD=" -march=haswell -mavx2 -mfma -mbmi -mbmi2 -mlzcnt -mmovbe -mpopcnt -mno-vzeroupper "
+  OBJS_FMA=" gemm_int-fma.o "
+  OBJS_AESNI=" aes-ni.o "
+  SRC_ASM="${SRC_ASM_LINUXAVX2}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_AVX2 "
+  FLAGS_BASE64=" -DHAVE_AVX2=1 -DBASE64_AVX2_USE_ASM=1 "
+ ;;
+
+ qnx/j64*) # qnx intel 64bit nonavx
+  TARGET=jamalgam
+  CFLAGS="$common -msse3 "
+  LDFLAGS=" -lm $LDOPENMP $LDTHREAD"
+  OBJS_AESNI=" aes-ni.o "
+  SRC_ASM="${SRC_ASM_LINUX}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_SSE2 "
+  FLAGS_BASE64=""
+ ;;
 
  windows/j32*) # windows x86
   jolecom="${jolecom:=0}"
@@ -757,7 +814,7 @@ fi
 mkdir -p ../bin/$jplatform64
 mkdir -p obj/$jplatform64/
 cp makefile-jamalgam obj/$jplatform64/.
-export CFLAGS LDFLAGS TARGET CFLAGS_SIMD GASM_FLAGS NASM_FLAGS FLAGS_SLEEF FLAGS_BASE64 DLLOBJS LIBJDEF LIBJRES OBJS_BASE64 OBJS_FMA OBJS_AESNI OBJS_AESARM OBJS_SLEEF OBJS_ASM SRC_ASM OBJSLN jplatform64
+export CC AR CFLAGS LDFLAGS TARGET CFLAGS_SIMD GASM_FLAGS NASM_FLAGS FLAGS_SLEEF FLAGS_BASE64 DLLOBJS LIBJDEF LIBJRES OBJS_BASE64 OBJS_FMA OBJS_AESNI OBJS_AESARM OBJS_SLEEF OBJS_ASM SRC_ASM OBJSLN jplatform64
 cd obj/$jplatform64/
 if [ "x$MAKEFLAGS" = x'' ] ; then
  if [ `uname` = Linux ]; then par=`nproc`; else par=`sysctl -n hw.ncpu`; fi

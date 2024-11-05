@@ -14,7 +14,7 @@ if [ "" = "$CFLAGS" ]; then
  case "$_DEBUG" in
   3) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g";;
-  2) OPTLEVEL=" -O0 -ggdb -DOPTMO0 "
+  2) OPTLEVEL=" -Og -ggdb -DOPTMO0 "
    NASM_FLAGS="-g";;
   1) OPTLEVEL=" -O2 -g "
    NASM_FLAGS="-g"
@@ -56,6 +56,14 @@ case "$jplatform64" in
 	 macmin="-isysroot $(xcrun --sdk macosx --show-sdk-path) -arch x86_64 -mmacosx-version-min=10.6";;
 	openbsd/*) make=gmake;;
 	freebsd/*) make=gmake;;
+	qnx/j64arm)
+	 CC="ntoaarch64-gcc"
+	 AR="ntoaarch64-ar"
+	 USE_PYXES=0;;
+	qnx/j64*)
+	 CC="ntox86_64-gcc"
+	 AR="ntox86_64-ar"
+	 USE_PYXES=0;;
  wasm*)
 	 USE_OPENMP=0
 	 LDTHREAD=" -pthread "
@@ -64,7 +72,8 @@ esac
 make="${make:=make}"
 
 CC=${CC-"$(which cc clang gcc 2>/dev/null | head -n1 | xargs basename)"}
-compiler="$(readlink -f "$(which $CC)" || which $CC)"
+#compiler="$(readlink -f "$(which $CC)" || which $CC)"
+compiler="$(which $CC)"
 echo "CC=$CC"
 echo "compiler=$compiler"
 
@@ -95,7 +104,7 @@ if [ $USE_OPENMP -eq 1 ] ; then
  esac
 fi
 
-if [ -z "${compiler##*gcc*}" ] || [ -z "${CC##*gcc*}" ]; then
+if [ -z "${compiler##*gcc*}" ] || [ -z "${CC##*gcc*}" ] ; then
  # gcc
  common="$OPENMP -fPIC $OPTLEVEL -falign-functions=4 -fvisibility=hidden -fno-strict-aliasing -fwrapv -fno-stack-protector -flax-vector-conversions -ffp-contract=off \
  -Werror -Wextra -Wno-unknown-warning-option \
@@ -599,6 +608,55 @@ case $jplatform64 in
   OBJS_AESNI=" aes-ni.o "
   SRC_ASM="${SRC_ASM_MAC}"
   GASM_FLAGS="$macmin"
+  FLAGS_SLEEF=" -DENABLE_SSE2 "
+  FLAGS_BASE64=""
+ ;;
+
+ qnx/j64arm) # qnx arm64
+  TARGET=libj.so
+  CFLAGS="$common -march=armv8-a+crc -DC_CRC32C=1 "    # mno-outline-atomics unavailable on clang-7
+  LDFLAGS=" -shared -Wl,-soname,libj.so -lm $LDOPENMP $LDTHREAD "
+  OBJS_AESARM=" aes-arm.o "
+  SRC_ASM="${SRC_ASM_RASPI}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_ADVSIMD "
+  FLAGS_BASE64=" -DHAVE_NEON64=1 "
+ ;;
+ 
+ qnx/j64avx512*) # qnx intel 64bit avx512
+  TARGET=libj.so
+  CFLAGS="$common -DC_AVX2=1 -DC_AVX512=1 "
+  LDFLAGS=" -shared -Wl,-soname,libj.so -lm $LDOPENMP $LDTHREAD "
+  CFLAGS_SIMD=" -march=skylake-avx512 -mavx2 -mfma -mbmi -mbmi2 -mlzcnt -mmovbe -mpopcnt -mno-vzeroupper "
+  OBJS_FMA=" gemm_int-fma.o "
+  OBJS_AESNI=" aes-ni.o "
+  OBJS_SIMDUTF8="${OBJS_SIMDUTF8_ASM}"
+  SRC_ASM="${SRC_ASM_LINUXAVX512}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_AVX2 "  #ditto
+  FLAGS_BASE64=" -DHAVE_AVX2=1 -DBASE64_AVX2_USE_ASM=1 " #ditto
+ ;;
+
+ qnx/j64avx2*) # qnx intel 64bit avx2
+  TARGET=libj.so
+  CFLAGS="$common -DC_AVX2=1 "
+  LDFLAGS=" -shared -Wl,-soname,libj.so -lm $LDOPENMP $LDTHREAD "
+  CFLAGS_SIMD=" -march=haswell -mavx2 -mfma -mbmi -mbmi2 -mlzcnt -mmovbe -mpopcnt -mno-vzeroupper "
+  OBJS_FMA=" gemm_int-fma.o "
+  OBJS_AESNI=" aes-ni.o "
+  SRC_ASM="${SRC_ASM_LINUXAVX2}"
+  GASM_FLAGS=""
+  FLAGS_SLEEF=" -DENABLE_AVX2 "
+  FLAGS_BASE64=" -DHAVE_AVX2=1 -DBASE64_AVX2_USE_ASM=1 "
+ ;;
+
+ qnx/j64*) # qnx intel 64bit nonavx
+  TARGET=libj.so
+  CFLAGS="$common -msse3 "
+  LDFLAGS=" -shared -Wl,-soname,libj.so -lm $LDOPENMP $LDTHREAD "
+  OBJS_AESNI=" aes-ni.o "
+  SRC_ASM="${SRC_ASM_LINUX}"
+  GASM_FLAGS=""
   FLAGS_SLEEF=" -DENABLE_SSE2 "
   FLAGS_BASE64=""
  ;;
