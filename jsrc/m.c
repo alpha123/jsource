@@ -59,6 +59,9 @@ void jvmrelease(void *p,I n){ // unreserves (and decommits) n bytes starting at 
  munmap(p,n);}
 void *jvmreservea(I n,I a){ //jvmreserve, but result is a multiple of 1<<a
  // todo: freebsd has MAP_ALIGNED
+ // must ensure n is at least a multiple of pagesz to avoid releasing all pages
+ if(!pagesz)pagesz=sysconf(_SC_PAGESIZE),pagemask=pagesz-1,pagermask=~pagemask;
+ I rm=n&pagemask;if(rm)n+=pagesz-rm;
  a=1<<a;I m=a-1;
  C *r=jvmreserve(n+a);I ri=(I)r;
  if(!(ri&m)){ //result already aligned; skip a syscall and just release the tail
