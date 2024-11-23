@@ -97,7 +97,7 @@ return (void*)((uintptr_t)((dvc)+((align)-1)) & ~((align)-1));
 }
 */
 
-#define SY_UNIX64 (SY_64 && (SY_LINUX || SY_MAC || SY_FREEBSD || SY_OPENBSD))
+#define SY_UNIX64 (SY_64 && (SY_LINUX || SY_MAC || SY_FREEBSD || SY_OPENBSD || SY_QNX))
 
 #if SY_WINCE
 #define HINSTANCE_ERROR 0
@@ -204,7 +204,7 @@ typedef struct {
 extern void double_trick(D,D,D,D);
 #endif
 
-#if SYS & (SYS_MACOSX | SYS_LINUX | SYS_FREEBSD | SYS_OPENBSD)
+#if SYS & (SYS_MACOSX | SYS_LINUX | SYS_FREEBSD | SYS_OPENBSD | SYS_QNX)
  #ifdef C_CD_ARMHF
  extern void double_trick(float,float,float,float,float,float,float,float,float,float,float,float,float,float,float,float);
  #else
@@ -1271,7 +1271,7 @@ static B jtcdexec1(J jt,CCT*cc,C*zv0,C*wu,I wk,I wt,I wd){A*wv=(A*)wu,x,y,*zv;B 
 #if SY_MACPPC
           dd[dcnt++]=(float)*(D*)xv;
 #endif
-#if SY_64 && (SY_LINUX  || SY_MAC || SY_FREEBSD || SY_OPENBSD)
+#if SY_64 && (SY_LINUX  || SY_MAC || SY_FREEBSD || SY_OPENBSD || SY_QNX)
   #if defined(__PPC64__)
      /* +1 put the float in low bits in dv, but dd has to be D */
    #if C_LE
