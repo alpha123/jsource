@@ -72,8 +72,7 @@ esac
 make="${make:=make}"
 
 CC=${CC-"$(which cc clang gcc 2>/dev/null | head -n1 | xargs basename)"}
-#compiler="$(readlink -f "$(which $CC)" || which $CC)"
-compiler="$(which $CC)"
+compiler="$(command -v readlink && readlink -f "$(which $CC)" || which $CC)"
 echo "CC=$CC"
 echo "compiler=$compiler"
 
