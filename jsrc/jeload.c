@@ -422,7 +422,9 @@ int jefirst(int type,char* arg)
 #elif defined(__FreeBSD__)
 	strcat(input,"[UNAME_z_=:'FreeBSD'");
 #elif defined(__OpenBSD__)
- strcat(input,"[UNAME_z_=:'OpenBSD'");
+	strcat(input,"[UNAME_z_=:'OpenBSD'");
+#elif defined(__QNX__)
+	strcat(input,"[UNAME_z_=:'QNX']");
 #elif !defined(ANDROID)
 	strcat(input,"[UNAME_z_=:'Linux'");
 #endif
