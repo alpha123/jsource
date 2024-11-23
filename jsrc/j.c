@@ -23,6 +23,7 @@ struct Bxnum0 {I hdr[AKXR(0)/SZI]; X v[1];};
 #define CREBLOCKVEC0(name,t) I __attribute__((aligned(CACHELINESIZE))) B##name[8]={8*SZI,(t)&TRAVERSIBLE,0,(t),ACPERMANENT,0,1,0};  // no padding at end - no atoms should be referenced
 CREBLOCKVEC0(aqq,LIT)  // ''
 CREBLOCKVEC0(mtv,B01)  // i.0 boolean
+CREBLOCKVEC0(mtvi,INT)  // i.0 integer
 #define CREBLOCKATOMV1(name,t,v1) struct Bd1 B##name={{AKXR(0),(t)&TRAVERSIBLE,0,(t),ACPERMANENT,1,0},{v1}};
 CREBLOCKATOMV1(onehalf,FL,0.5)  // 0.5
 CREBLOCKATOMV1(ainf,FL,INFINITY)  // _
@@ -102,7 +103,7 @@ struct Bi1 Bnumi4[] = {  // I4 0, 1, 2 used for constants
 
 D   inf=INFINITY;                // _
 D   infm=-INFINITY;              // __
-D   jnan=NAN;                    // _.
+// obsolete D   jnan=NAN;                    // _.
 D   pf=0;                        // performance frequency
 Z   zeroZ={0,0};                 // 0j0; also used for QP zero and Sleef QP 0
 /*
@@ -124,6 +125,9 @@ uint64_t g_cpuFeatures2;  // fsgsbase
 int numberOfCores;        // number of cpu cores
 UC  hwaes=0;              // hardware aes support
 UC  hwfma=0;              // blis cpu tuning
+#ifdef BOXEDSPARSE
+UC  fboxedsparse=1;       // enable boxed sparse
+#endif
 I fortesting=0;   // used for measurements
 // globals end
 

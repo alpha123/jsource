@@ -14,11 +14,11 @@ DF1(jtcatalog){PROLOG(0072);A b,*wv,x,z,*zv;C*bu,*bv,**pv;I*cv,i,j,k,m=1,n,p,*qv
  DO(n, x=C(wv[i]); if(likely(AN(x))){p=AT(x); t=t?t:p; ASSERTF(!ISSPARSE(p),EVNONCE,"sparse arrays not supported"); ASSERT(HOMO(t,p),EVINHOMO); RE(t=maxtype(t,p));});  // use vector maxtype; establish type of result
  t=t?t:B01; k=bpnoun(t);  // if all empty, use boolean for result
  GA10(b,t,n);      bv=CAV(b);  // allocate place to build each item of result - one atom from each box.  bv->item 0
- GATV0(x,INT,n,1);    qv=AV(x);   // allocate vector of max-indexes for each box - only the address is used  qv->max-index 0
- GATV0(x,BOX,n,1);    pv=(C**)AV(x);  // allocate vector of pointers to each box's data  pv->box-data-base 0
+ GATV0(x,INT,n,1);    qv=AV1(x);   // allocate vector of max-indexes for each box - only the address is used  qv->max-index 0
+ GATV0(x,BOX,n,1);    pv=(C**)AV1(x);  // allocate vector of pointers to each box's data  pv->box-data-base 0
  RZ(x=apvwr(n,0L,0L)); cv=AV(x);   // allocate vector of current indexes, init to 0  cv->current-index 0
  DO(n, x=C(wv[i]); if(TYPESNE(t,AT(x)))RZ(x=cvt(t,x)); r+=AR(x); qv[i]=p=AN(x); DPMULDE(m,p,m); pv[i]=CAV(x););  // fill in *qv and *pv; calculate r=+/ #@$@> w, m=*/ */@$@> w
- GATV0(z,BOX,m,r);    zv=AAV(z); s=AS(z);   // allocate result area
+ GATV0(z,BOX,m,r);    zv=AAVn(r,z); s=AS(z);   // allocate result area
  // There is no need to turn off pristinity of w, because nothing was copied out by pointer (everything was copied & then cloned)
  // The result is certainly pristine if it is DIRECT
  AFLAGORLOCAL(z,(-(t&DIRECT))&AFPRISTINE)  // set result pristine if boxes DIRECT
@@ -396,7 +396,8 @@ F2(jtifrom){A z;C*wv,*zv;I acr,an,ar,*av,j,k,p,pq,q,wcr,wf,wn,wr,*ws,zn;
  // if no frame, w cell-rank is 1, a is inplaceable, and an atom of w is the same size as an atom of a, preserve inplaceability of a (.ind is already filled in)
  // since inplacing may change the type, we further require that the block not be UNINCORPABLE, and the result also must be DIRECT since
  // the copy may be interrupted by index error and be left with invalid atoms, and if boxed may be to a recursive block.  Also, a must not be the same block as w
- jtinplace=(J)((I)jtinplace&~((((a!=w)&SGNTO0(AC(a)&SGNIFNOT(AFLAG(a),AFUNINCORPABLEX)&-(AT(w)&DIRECT)))<=(UI)(wf|(wcr^1)|(SZI^(1LL<<bplg(AT(w))))))<<JTINPLACEAX));
+// obsolete  jtinplace=(J)((I)jtinplace&~((((a!=w)&SGNTO0(AC(a)&SGNIFNOT(AFLAG(a),AFUNINCORPABLEX)&-(AT(w)&DIRECT)))<=(UI)(wf|(wcr^1)|(SZI^(1LL<<bplg(AT(w))))))<<JTINPLACEAX));
+ jtinplace=(J)((I)jtinplace&~((((a!=w)&SGNTO0(AC(a)&SGNIFNOT(AFLAG(a),AFUNINCORPABLEX)&-(AT(w)&DIRECT)))<=(UI)(wf|(wcr^1)|(LGSZI^bplg(AT(w)))))<<JTINPLACEAX));
  RETF(jtaxisfrom(jtinplace,w,axes,(wncr<<24)+(wf<<16)+((ar+wr-(I)(0<wcr))<<8)+r*0x81))  // move the values and return the result
 }    /* a{"r w for numeric a */
 
@@ -542,48 +543,74 @@ static F2(jtafrom){F2PREFIP; PROLOG(0073);
  RETF(jtaxisfrom((J)((I)jtinplace&~JTINPLACEA),w,axes,(wncr<<24)+(wf<<16)+(zr<<8)+(hasr<<7)+r))  // move the values and return the result
 }    /* a{"r w for boxed index a */
 
+// a{"r w  We handle the fast cases (atom{array) and (empty{"r array) here.  For others we go to a type-dependent processor for a that will build index lists
 DF2(jtfrom){A z;
  F2PREFIP;
  ARGCHK2(a,w);
  I at=AT(a), wt=AT(w), ar=AR(a), wr=AR(w);
  if(likely(!ISSPARSE(at|wt))){
-  // Handle the simple case of B01|INT|FL atom { INT|FL|BOX array, and no frame: just pluck the value.  If a is inplaceable, incorpable, and DIRECT, use it
-  // We allow FL only if it is the same size as INT
+  // Handle the simple case of unboxed atom { array, and no frame: single cell
   // We don't process NJA through here because it might create a virtual block & we don't want NJAs rendered unmodifiable by virtual blocks
-  if(!((at&(NOUN&~(B01|INT|(SY_64*FL))))+(wt&(NOUN&~(INT|(SY_64*FL)|BOX)))+ar+(SGNTO0((((RANKT)jt->ranks-wr)|(wr-1))))+(AFLAG(w)&AFNJA))){
+// obsolete   if(!((at&(NOUN&~(B01|INT|(SY_64*FL))))+(wt&(NOUN&~(INT|(SY_64*FL)|BOX)))+ar+(SGNTO0((((RANKT)jt->ranks-wr)|(wr-1))))+(AFLAG(w)&AFNJA))){
+  if(!((at&BOX)+ar+(SGNTO0((((RANKT)jt->ranks-wr)|(wr-1))))+(AFLAG(w)&AFNJA))){   // if AR is unboxed atom and w has no frame
    I av;  // selector value
-   if(likely(!SY_64||at&(B01|INT))){av=BIV0(a);  // INT index
-   }else{  // FL index
-    D af=DAV(a)[0], f=jround(af); av=(I)f;
-    ASSERT(ISFTOIOK(f,af),EVDOMAIN);  // if index not integral, complain.  IMAX/IMIN will fail presently.  We rely on out-of-bounds conversion to peg out one side or other (standard violation)
-   }
-   I wr1=wr-1;
-   if(wr1<=0){  // w is atom or list, result is atom
+   if(likely(at&(B01|INT))){av=BIV0(a);  // B01/INT index.  We don't set at=INT for B01 because we aren't sure it's OK to overwrite a, which might be NJA.  Questionable analysis.
+   }else{
+    if(likely(at&FL)){  // FL index
+     D af=DAV(a)[0], f=jround(af); av=(I)f; if(SY_64)at=INT;  // av=index; if INT atom can hold FL atom, pretend a is INT so we can 
+     ASSERT(ISFTOIOK(f,af),EVDOMAIN);  // if index not integral, complain.  IMAX/IMIN will fail presently.  We rely on out-of-bounds conversion to peg out one side or other (standard violation)
+    }else{RZ(a=cvt(INT,a)) av=IAV(a)[0]; at=INT;}  // other index - must be convertible to INT, do so
+   }  // now av is the index and at has been modified, perhaps, to allow inplacing of converted a
+   I wr1=wr-1; wr1-=REPSGN(wr1);  // rank of cell of w
+   if((SGNIF(at,INTX)&-(wt&INT+(SY_64*FL)+BOX)&(wr-2))<0){  // w is atom or list whose atomsize is SZI; a is atom of same size, result is atom
+    // here moving SZI-sized atoms, which means we can put the result on top of a if a is direct inplaceable abandoned
+    // We focus on SZI-sized atoms because we move them without a loop and can inplace into a.  If we can't inplace into a we could revert to general 1-cell code below, but we skip quite a bit here
+    I j; SETNDX(j,av,AN(w));  // fetch and audit index into j
     // Get the area to use for the result: the a input if possible (inplaceable, incorpable, DIRECT), else an INT atom. a=w OK!
     // We can't get away with changing the type for an INT atom a to BOX.  It would work if the a is not contents, but if it is pristine contents it may have
     // been made to appear inplaceable in jtevery.  In that case, when we change the AT we have the usecount wrong, because the block is implicitly recursive by virtue
     // of being contents.  It's not a good trade to check for recursiveness of contents in tpop (currently implied).
-    if((SGNIF(jtinplace,JTINPLACEAX)&AC(a)&(((AFLAG(a)|wt)&AFUNINCORPABLE+BOX)-1))<0)z=a; else{GAT0(z,INT,1,0)}
-    // Move the value and transfer the block-type
-    I j; SETNDX(j,av,AN(w)); IAV(z)[0]=IAV(w)[j]; AT(z)=wt;   // change type only if the transfer succeeds, to avoid creating an invalid a block that eformat will look at
-    // Here we transferred one I/A out of w.  We must mark w non-pristine.  If it was inplaceable, we can transfer the pristine status.  We overwrite w because it is no longer in use
+    if((SGNIF(jtinplace,JTINPLACEAX)&AC(a)&(((AFLAG(a)|wt)&AFUNINCORPABLE+AFNJA+BOX)-1))<0){z=a; AT(z)=wt;} else{GA00(z,wt,1,0)}  // NJA=LIT, ok.  transfer the block-type if we reuse a
+    // Move the value
+    IAV(z)[0]=IAV(w)[j];   // change type only if the transfer succeeds, to avoid creating an invalid a block that eformat will look at
+    // We transferred one I/A out of w.  We must mark w non-pristine.  If it was inplaceable, we can transfer the pristine status.  We overwrite w because it is no longer in use
     PRISTXFERF(z,w)  // this destroys w
    }else{
-    // rank of w > 1, return virtual cell
-    I *ws=AS(w);  // shape of w
+    // Not SZI-sized items.  w is not INT/FL/BOX or has rank >1, return single cell, possibly virtual
+    I *ws=AS(w); I wi; SETIC(w,wi); // shape of w, number of items in w
     I m; PROD(m,wr1,ws+1);  // number of atoms in a cell
-    I j; SETNDX(j,av,ws[0]);  // j=positive index
-    RZ(z=virtualip(w,j*m,wr1));   // if w is rank 2, could reuse inplaceable a for this virtual block
-    // fill in shape and number of atoms.  ar can be anything.
-    AN(z)=m; MCISH(AS(z),ws+1,wr1)
-    // When we create a virtual block we do not actually copy anything out of w, so it remains pristine.  The result is not.
+// obsolete     I j; SETNDX(j,av,ws[0]);  // j=positive index
+    I j; SETNDX(j,av,wi);  // j=positive index, audited
+    if(m<MINVIRTSIZE){  // if cell too small for virtual, allocate & fill here
+     I k=bplg(wt); GA(z,wt,m,wr1,ws+1) JMC(CAVn(wr1,z),CAV(w)+j*(m<<k),m<<k,0);  // copy in the data, possibly overstoring up to 7 bytes.  Nonrecursive block
+     // We transferred one I/A out of w.  We must mark w non-pristine.  If it was inplaceable, we can transfer the pristine status.  We overwrite w because it is no longer in use
+     PRISTXFERF(z,w)  // this destroys w
+    }else{
+     RZ(z=virtualip(w,j*m,wr1));   // if w is rank 2, could reuse inplaceable a for this virtual block
+     // fill in shape and number of atoms.  ar can be anything.
+     AN(z)=m; MCISH(AS(z),ws+1,wr1)
+     // When we create a virtual block we do not actually copy anything out of w, so it remains pristine.  The result is not.
+    }
    }
-  }else if(unlikely(AN(a)==0&&!((jt->ranks-((ar<<RANKTX)+wr))&(((RMAX+1)<<RANKTX)+(RMAX+1))))){  // scaf handle other empty-result cases too
-   // The case of (empty array) { y.  Result is (($x),(}.^:(32~:3!:0 x) $y)) ($,) y.  Doesn't happen often but we save big when it does
-   I zr=AR(w)-1+SGNTO0(SGNIF(at,BOXX)); zr=zr<0?0:zr; zr+=AR(a);  // rank. $ (i.0 0) { (i. 4 5)  is 0 0 5;  $ (0 0$a:) { (i. 4 5) is 0 0 4 5.  $ (0$a:) { 5  is  $ (0$0) { 5  is 0
-   GA00(z,wt,0,zr); MCISH(AS(z),AS(a),ar) MCISH(AS(z)+ar,AS(w)+wr-(zr-ar),zr-ar)
+  }else if(unlikely(AN(a)==0)){  // a is empty, so the result must be also.  Doesn't happen often but we save big when it does
+   I zr=wr-1+SGNTO0(SGNIF(at,BOXX));  // rank of w, -1 if a is not boxed
+   if(!((jt->ranks-((ar<<RANKTX)+wr))&(((RMAX+1)<<RANKTX)+(RMAX+1)))){  // is there frame?
+    // The case of (empty array) { y (no frame).  Result is (($x),(}.^:(32~:3!:0 x) $y)) ($,) y.
+    // $ (i.0 0) { (i. 4 5)  is 0 0 5;  $ (0 0$a:) { (i. 4 5) is 0 0 4 5.  $ (0$a:) { 5  is  $ (0$0) { 5  is 0
+    zr=zr<0?0:zr;  // rank of cell of w
+    // if result is empty, we can use a as the return element if it is incorpable and abandoned inplaceable or it is an empty of the right type
+    if(((zr-1)&SGNIFNOT(AFLAG(a),AFUNINCORPABLEX)&((AC(a)&SGNIF(jtinplace,JTINPLACEAX))|-(at&wt&NOUN)))<0){z=a; I *tv=&AT(a); tv=at&wt&NOUN?&jt->shapesink[0]:tv; *tv=wt;
+    }else{GA00(z,wt,0,zr+ar); MCISH(AS(z),AS(a),ar) MCISH(AS(z)+ar,AS(w)+wr-zr,zr)  // if we can't reuse a, allocate & fill in
+    }
+   }else{
+    // There is frame.  We have to check agreement.  shape is (long frame),(a cell shape),(w cell shape possibly beheaded)
+    I af=ar-(jt->ranks>>RANKTX); af=af<0?0:af; I wf=wr-(RANKT)jt->ranks; wf=wf<0?0:wf; I lf=af<wf?wf:af; I cf=af<wf?af:wf; A la=af<wf?w:a;  // af, wf=lens of outer frame; lf=len of long frame; la->longer frame
+    ASSERTAGREE(AS(a)+af-cf,AS(w)+wf-cf,cf)  // cf=common frame; verify common frames agree
+    zr-=wf; zr=zr<0?0:zr;  // remove the w frame from w rank to get the cell-rank
+    GA00(z,wt,0,lf+ar-af+zr); MCISH(AS(z),AS(la),lf) MCISH(AS(z)+lf,AS(a)+af,ar-af) MCISH(AS(z)+lf+ar-af,AS(w)+wr-zr,zr) // allocate the empty array & move in shape
+   }
   }else{
-   // not atom{array.  Process according to type of a
+   // not (atom/empty){array.  Process according to type of a
     RANK2T origranks=jt->ranks;  // remember original ranks in case of error
    if(!(at&BOX))z=jtifrom(jtinplace,a,w);else z=jtafrom(jtinplace,a,w);
    // If there was an error, call eformat while we still have the ranks.  convert default rank back to R2MAX to avoid "0 0 in msg
@@ -1177,7 +1204,7 @@ static unsigned char jtmvmsparsesprx(J jt,struct mvmctx *ctx,UI4 ti){
   // decision variable.  convert the column indexes into pointers into Qkt, and interleave them with the values
   an=axv[colx][1]; I wtofst=axv[colx][0];   // number of weights in column, offset to them
   I ntoalloc=(an+1+NPAR-1)&-NPAR;  // block that can hold all the pointers/weights
-  A wts; GATV0(wts,INT,2*ntoalloc,1)  mv0=voidAV(wts); vv0=(D*)(mv0+ntoalloc);   // place to hold the addresses/weights of the columns being combined
+  A wts; GATV0(wts,INT,2*ntoalloc,1)  mv0=voidAV1(wts); vv0=(D*)(mv0+ntoalloc);   // place to hold the addresses/weights of the columns being combined
   I *amv=amv0+wtofst; D *avv=avv0+wtofst;  // number of sparse atoms in each row; pointer to first col#; pointer to first weight
   __m256i qkt0_4=_mm256_set1_epi64x((I)qkt0), qkrowstride_4=_mm256_set1_epi32(qktrowstride<<LGSZD);
   for(avx=0;avx<an;avx+=NPAR){  // for each block of input... (this overfetches but that's OK since we map enough for one 32-byte final fetch)
@@ -1605,7 +1632,7 @@ struct mvmctx opctx;  // parms to all threads, and return values
  jtjobrun(jt,actionrtn,&opctx,nthreads,0);  // go run the tasks - default to threadpool 0
  // atomic sync operation on the job queue guarantee that we can use regular loads from opctx
 
- A r; GAT0(r,FL,5,1); D *rv=DAV(r);  // return area
+ A r; GAT0(r,FL,5,1); D *rv=DAV1(r);  // return area
  I retinfo=rv[1]=opctx.retinfo; rv[2]=(UI4)opctx.nimpandcols; rv[3]=opctx.ndotprods;
  if(isgradmode){
   // gradient mode.  We were minimizing 1/gradient^2; convert to gradient
@@ -1957,7 +1984,7 @@ static unsigned char jtfindsprx(J jt,struct sprctx* const ctx,UI4 ti){
  // In QP, the true SPR may be up to 1.5 DP ULP greater than calculated value.  Go back and get the list of row#s that overlap with that
  // create the column NPAR values at a time
  allmin=_mm256_mul_pd(allmin,_mm256_set1_pd(1.0000000000000003));  // add 2 ULPs in DP
- A conten; GA0(conten,INT,m,0) I *conten0=IAV(conten), conteni=0;  // get address of place to store contenders
+ A conten; GA0(conten,INT,m,0) I *conten0=IAV0(conten), conteni=0;  // get address of place to store contenders
  for(i=i0;i<i0e;i+=NPAR){
   // get the validity mask and process: leave as ones until the end of the column
   __m256d ck4, bk4;  // values we are working on
@@ -2074,9 +2101,9 @@ F1(jtfindspr){F1PREFIP;
           t0=_mm256_sub_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),prodh),prodl);  // - (amount the product is too high).  1-prodh gives exact result, commensurate with prodl
           t0=_mm256_fmadd_pd(reciphi,t0,reciplo); t1=reciphi; TWOSUMBS(t1,t0,reciphi,reciplo)  // -(toohigh)*recip(hi) gives correction to recip: add it in
    )
-   DAV(z)[1]=_mm256_cvtsd_f64(reciplo);  // lower recip
-  }else DAV(z)[1]=0.0;
-  DAV(z)[0]=_mm256_cvtsd_f64(reciphi);  // always write upper/only recip
+   DAV1(z)[1]=_mm256_cvtsd_f64(reciplo);  // lower recip
+  }else DAV1(z)[1]=0.0;
+  DAV1(z)[0]=_mm256_cvtsd_f64(reciphi);  // always write upper/only recip
   RETF(z);  // return qp reciprocal
  }else{
   // search for the best SPR

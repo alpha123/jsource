@@ -45,7 +45,7 @@ F2(jtcrc2){I n;UINT z;UC*v; UINT crctab[256];
 
 F1(jtcrccompile){A h,*hv;UINT z; UINT crctab[256];
  ARGCHK1(w);
- GAT0(h,BOX,2,1); hv=AAV(h);
+ GAT0(h,BOX,2,1); hv=AAV1(h);
  RE(z=crcvalidate(w,crctab));
  RZ(hv[0]=incorp(vec(LIT,sizeof(crctab),crctab)));  // Save the table.  We don't have any other good type to use
  RZ(hv[1]=incorp(sc((I)z)));
@@ -97,7 +97,7 @@ DF1(jttobase64){
  I n3=AN(w)/3; I ne=AN(w)%3;
  I zn=n3+SGNTO0(-ne);  // total # result 4-byte groups
  // Allocate result
- A z; GATV0(z,LIT,zn<<2,1); UI4 *zv=UI4AV(z);  // result block, pointer into it
+ A z; GATV0(z,LIT,zn<<2,1); UI4 *zv=UI4AV1(z);  // result block, pointer into it
  C *wv=CAV(w);  // input pointer
 #if defined(__wasm__)  // superseded by library
  // Handle each 3-byte group, producing a 4-byte result.  We load 3 bytes at a time, so we may read into the padding area, but never
@@ -164,7 +164,7 @@ DF1(jtfrombase64){
  // process the input in full 4-byte groups.  We may overread the input AND overwrite the result, but we will always stay in the padding area,
  // which is OK because we allocated the result here
 #if defined(__wasm__)  // superseded by library
- UI4 *wv4=UI4AV(w); C *zv=CAV(z);  // write result as bytes, to avoid requiring heroic action in the write combiners
+ UI4 *wv4=UI4AV(w); C *zv=CAV1(z);  // write result as bytes, to avoid requiring heroic action in the write combiners
  for(wn-=3;wn>0;wn-=4){  // for each block of 4, not counting an incomplete last one
   // translate the UTF8 via table lookup.  We could avoid the table reads if we didn't feel the need to validate the input
   UI4 bytes4=*wv4++; I ba=base64invtab[bytes4&0xff]; I bb=base64invtab[(bytes4>>8)&0xff];  I bc=base64invtab[(bytes4>>16)&0xff];  I bd=base64invtab[(bytes4>>24)&0xff];
@@ -183,7 +183,7 @@ DF1(jtfrombase64){
  }
 #else
 size_t zlen=AN(z);
-int rc=base64_decode(CAV(w), AN(w), CAV(z), &zlen, B64CODEC );
+int rc=base64_decode(CAV(w), AN(w), CAV1(z), &zlen, B64CODEC );
 ASSERT(rc==1&&(I)zlen==AN(z),EVDOMAIN);  // make sure no invalid input bytes
 #endif
  R z;

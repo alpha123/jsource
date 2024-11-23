@@ -6,7 +6,7 @@
 #include "j.h"
 
 
-F1(jttally ){A z; I k; ARGCHK1(w); z=sc(SETIC(w,k));            RETF(AT(w)&XNUM+RAT?xco1(z):z);}  //  # y
+F1(jttally ){A z; I k; ARGCHK1(w); z=sc(SETIC(w,k)); RETF(AT(w)&XNUM+RAT?xco1(z):z);}  //  # y
 F1(jtshapex){A z; ARGCHK1(w); VECI(z,AR(w),AS(w)); if(unlikely(((AT(w)&XNUM+RAT)!=0)))z=xco1(z); RETF(z);}
 F1(jtshape){ARGCHK1(w); A z; VECI(z,AR(w),AS(w)); RETF(z);}  // $ y
 F1(jtisempty){ARGCHK1(w); if(unlikely(ISSPARSE(AT(w))))R eps(zeroionei(0),shape(w)); R num(AN(w)==0);}  // 0 e. $
@@ -49,7 +49,7 @@ F1(jtravel){A a,c,q,x,y,y0,z;B*b;I f,j,m,r,*u,*v,*yv;P*wp,*zp;
   if(memchr(b+f,C0,r)){mvc(r,b+f,1,MEMSET01); RZ(w=reaxis(ifb(AR(w),b),w)); wp=PAV(w); x=SPA(wp,x);}
   else RZ(x=ca(SPA(wp,x)));
   a=ifb(1+f,b); makewritable(a)   // avoid readonly block
-  GATV0(c,INT,r,1L); v=r+AV(c); j=AR(w); m=1; DQ(r, *--v=m; m*=AS(w)[--j];);
+  GATV0(c,INT,r,1L); v=r+AVn(1L,c); j=AR(w); m=1; DQ(r, *--v=m; m*=AS(w)[--j];);
   y0=SPA(wp,i); v=AS(y0); m=v[0]; I n=v[1];
   RZ(q=pdt(dropr(n-r,y0),c));
   GATV0(y,INT,m*(1+n-r),2); v=AS(y); v[0]=m; v[1]=1+n-r;

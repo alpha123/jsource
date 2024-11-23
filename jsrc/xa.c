@@ -11,6 +11,10 @@ extern uint64_t g_cpuFeatures;
 extern uint64_t g_cpuFeatures2;
 extern int numberOfCores;
 
+#ifdef BOXEDSPARSE
+extern UC fboxedsparse;
+#endif
+
 #include <string.h>
 #ifdef _WIN32
 #define strncasecmp _strnicmp
@@ -56,7 +60,7 @@ F1(jtnmcaches){
  jt->namecaching|=(C)((arg<<1)+!!arg); if(arg==0)jt->namecaching=0; R mtv;  // save bits separately, clear if both 0, return empty vec
 }
 
-F1(jtdispq){A z; ASSERTMTV(w); GATV0(z,INT,*JT(jt,disp),1); ICPY(AV(z),1+JT(jt,disp),*JT(jt,disp)); R z;}
+F1(jtdispq){A z; ASSERTMTV(w); GATV0(z,INT,*JT(jt,disp),1); ICPY(AV1(z),1+JT(jt,disp),*JT(jt,disp)); R z;}
 
 F1(jtdisps){UC n;
  RZ(w=vi(w));
@@ -78,7 +82,7 @@ F1(jtevms){A t,*tv,*wv;
  ASSERT(NEVM==AN(w),EVLENGTH);
  ASSERT(BOX&AT(w),EVDOMAIN);
  ASSERT(THREADID(jt)==0,EVRO);  // allow setting messages only in master thread
- GAT0(t,BOX,1+NEVM,1); tv=AAV(t); 
+ GAT0(t,BOX,1+NEVM,1); tv=AAV1(t); 
  *tv++=mtv;
  wv=AAV(w);
  DQ(NEVM, RZ(*tv=incorp(ca(vs(C(*wv))))); ACINITZAP(*tv) CAV(*tv)[AN(*tv)]=0; ++tv; ++wv;);  // NUL-terminate.  ca to make sure there's room.  ZAP since it's going into recursive box
@@ -123,7 +127,7 @@ F1(jtieps){
 // 9!:36
 F1(jtoutparmq){A z;D*u;I*v;
  ASSERTMTV(w);
- GAT0(z,INT,4,1); v= AV(z);
+ GAT0(z,INT,4,1); v= AV1(z);
  v[0]=JT(jt,outeol);
  v[1]=FLOAT16TOI(JT(jt,outmaxlen));
  v[2]=FLOAT16TOI(JT(jt,outmaxbefore));
@@ -285,7 +289,7 @@ F1(jtdeprecxs){A ct, excl;
 
 //9!:54
 F1(jtdeprecxq){A zd;
- GAT0(zd,INT,16,1); I zdi=0; DO(15, if((JT(jt,deprecex)>>i)&1)IAV(zd)[zdi++]=i;) AN(zd)=AS(zd)[0]=zdi;  // create vector of exclusions
+ GAT0(zd,INT,16,1); I zdi=0; DO(15, if((JT(jt,deprecex)>>i)&1)IAV1(zd)[zdi++]=i;) AN(zd)=AS(zd)[0]=zdi;  // create vector of exclusions
  READLOCK(JT(jt,startlock))
  A z=jlink(sc(JT(jt,deprecct)),zd);  // return current status
  READUNLOCK(JT(jt,startlock))
@@ -313,7 +317,7 @@ F1(jtstackfault){C stackbyte,buf[80],*stackptr=&stackbyte;
  R 0;
 }
 
-// 9!:56  undocumented
+// 9!:56
 // query/override cpu feature
 F1(jtcpufeature){
  ARGCHK1(w);
@@ -686,6 +690,25 @@ F2(jtgemmtune2){I j,k;
  else if(k==1) JT(jt,dgemm_thres)=j16;
  else JT(jt,zgemm_thres)=j16;
  R sc(1);
+}
+
+// 9!:65  undocumented
+// set boxed sparse array capacity  0 disable  1 enable
+
+// 9!:65 0/1
+F1(jtboxedsparse){I k;
+#ifndef BOXEDSPARSE
+ ASSERT(0,EVNONCE);
+#else
+ ARGCHK1(w);
+ ASSERT(AT(w)&(B01+INT),EVDOMAIN);
+ ASSERT(1==AN(w),EVLENGTH);
+ ASSERT(1>=AR(w),EVRANK);
+ RE(k=i0(w));  // get arg
+ ASSERT(k==0||k==1,EVDOMAIN);
+ fboxedsparse=k;
+ R mtv;
+#endif
 }
 
 // enable/disable tstack auditing, since some testcases run too long with it enabled

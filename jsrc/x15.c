@@ -65,7 +65,7 @@ typedef unsigned char       BYTE;
 #include <wchar.h>
 #include <complex.h>
 #undef I
-#ifdef _WIN32
+#if defined(_WIN32)
 typedef _Fcomplex float_complex;
 typedef _Dcomplex double_complex;
 #else
@@ -97,7 +97,12 @@ return (void*)((uintptr_t)((dvc)+((align)-1)) & ~((align)-1));
 }
 */
 
+/* windows arm64 also uses generic arm64 abi like other *nix */
+#if defined(__aarch64__)
+#define SY_UNIX64 1
+#else
 #define SY_UNIX64 (SY_64 && (SY_LINUX || SY_MAC || SY_FREEBSD || SY_OPENBSD || SY_QNX))
+#endif
 
 #if SY_WINCE
 #define HINSTANCE_ERROR 0
@@ -200,8 +205,10 @@ typedef struct {
  } starlett[NCDARGS];   // flag/letter per arg
 } CCT;
 
-#if SY_64 && SY_WIN32
+#if SY_64 && SY_WIN32 && !defined(__aarch64__)
 extern void double_trick(D,D,D,D);
+#elif SY_64 && SY_WIN32 && defined(__aarch64__)
+extern void double_trick(D,D,D,D,D,D,D,D);
 #endif
 
 #if SYS & (SYS_MACOSX | SYS_LINUX | SYS_FREEBSD | SYS_OPENBSD | SYS_QNX)
@@ -241,9 +248,9 @@ static void double_trick(double*v, I n){I i=0;
 /*
 #if SYS & SYS_MACOSX
  #define dtrick double_trick(dd,dcnt);
-#elif SY_64 && SY_WIN32
+#elif SY_64 && SY_WIN32 && !defined(__aarch64__)
  #define dtrick {D*pd=(D*)d; double_trick(pd[0],pd[1],pd[2],pd[3]);}
-#elif SY_64 && SY_LINUX
+#elif SY_UNIX64
  #define dtrick double_trick(dd[0],dd[1],dd[2],dd[3],dd[4],dd[5],dd[6],dd[7]);
 #elif 1
  #define dtrick ;
@@ -251,7 +258,7 @@ static void double_trick(double*v, I n){I i=0;
 */
 
 #if SY_64
- #if SY_WIN32
+ #if SY_WIN32 && !defined(__aarch64__)
   #define dtrick {D*pd=(D*)d; double_trick(pd[0],pd[1],pd[2],pd[3]);}
  #elif SY_UNIX64
   #ifdef __PPC64__
@@ -695,7 +702,7 @@ static void convertdown(void *pi,I n,C t,C sizes){
  case -1+0b0001:{C*pt=(C*)pi; C2*ps=(C2*)pi; DO(n, pt[i]=(C)ps[i];);} break;
  // complex case
  case 4+0b1011:
-#ifdef _WIN32
+#if defined(_WIN32)
   {float_complex*pt=(float_complex*)pi;D*ps=(D*)pi; DO(n, pt[i]=_FCOMPLEX_((float)ps[2*i],(float)ps[1+2*i]););} break;
 #else
  {float_complex*pt=(float_complex*)pi;D*ps=(D*)pi; DO(n, pt[i]=(float)ps[2*i]+_Complex_I*(float)ps[1+2*i];);} break;
@@ -753,7 +760,7 @@ static void convertup(void *pi,I n,C t,C sizes){
 // allocate hashtable, fill with -1.  Result is address
 static A jtcdgahash(J jt,I n){A z;I hn;
  FULLHASHSIZE(n,INTSIZE,0,0,hn);
- GATV0(z,INT,hn,0); ACINITZAP(z); mvc(hn*SZI,AV(z),1,MEMSETFF);  // no rank - use all words for table
+ GATV0(z,INT,hn,0); ACINITZAP(z); mvc(hn*SZI,AV0(z),1,MEMSETFF);  // no rank - use all words for table
  R z;
 }
 
@@ -1157,7 +1164,7 @@ static B jtcdexec1(J jt,CCT*cc,C*zv0,C*wu,I wk,I wt,I wd){A*wv=(A*)wu,x,y,*zv;B 
    xlgsz=bplg(xt);  // lg(actual atom len)
    boxatomsgn=-star&(xr-1)&SGNIF(xt,BOXX);  // neg if boxed atom used as pointer
    CDASSERT(xv!=0,per);   // abort if conversion failed
-   if(zbx){GA00(y,t,1,0); MC(AV(y),xv,bpnoun(t)); *zv=incorp(y);}  // must never install inplaceable block; move value into a box
+   if(zbx){GA00(y,t,1,0); MC(AV0(y),xv,bpnoun(t)); *zv=incorp(y);}  // must never install inplaceable block; move value into a box
   }
   xlgsz=xt&CMPX?3:xlgsz;  // the length for CMPX is the length of an atom
 
@@ -1271,7 +1278,7 @@ static B jtcdexec1(J jt,CCT*cc,C*zv0,C*wu,I wk,I wt,I wd){A*wv=(A*)wu,x,y,*zv;B 
 #if SY_MACPPC
           dd[dcnt++]=(float)*(D*)xv;
 #endif
-#if SY_64 && (SY_LINUX  || SY_MAC || SY_FREEBSD || SY_OPENBSD || SY_QNX)
+#if SY_UNIX64
   #if defined(__PPC64__)
      /* +1 put the float in low bits in dv, but dd has to be D */
    #if C_LE
@@ -1330,7 +1337,7 @@ static B jtcdexec1(J jt,CCT*cc,C*zv0,C*wu,I wk,I wt,I wd){A*wv=(A*)wu,x,y,*zv;B 
 
  DO(cipcount, convertdown(cip[i].v,cip[i].n,cip[i].t,cip[i].cxlgsz););  /* convert I to s and int and d to f as required */
  // allocate the result area and point to it
- if(zbx){GA00(x,cc->zt,1,0); xv=AV(x); *(A*)zv0=incorp(x);}else xv=(I*)zv0;  // must not box an inplaceable.  xv points to where the function will store its result: in zv or in a fresh box
+ if(zbx){GA00(x,cc->zt,1,0); xv=AV0(x); *(A*)zv0=incorp(x);}else xv=(I*)zv0;  // must not box an inplaceable.  xv points to where the function will store its result: in zv or in a fresh box
  // get the address of the function
  if('1'==cc->cc){fp=(FARPROC)*((I)cc->fp+(I*)*(I*)*data); CDASSERT(fp!=0,DEBADFN);}else fp=cc->fp;
 
@@ -1506,7 +1513,7 @@ DF2(jtmemalign){I *s, n, r;  // shape and rank
  I t=AT(w);
  A z; GA00(z,t,n,neededrank) AR(z)=r; MCISH(AS(z),s,r)  // allocate result with data on boundary; fill in correct rank
  I k=bplg(t);
- mvc(n<<k,voidAV(z),AN(w)<<k,voidAV(w));  // copy the data block in full
+ mvc(n<<k,voidAVn(neededrank,z),AN(w)<<k,voidAV(w));  // copy the data block in full
  R z;
 }
 

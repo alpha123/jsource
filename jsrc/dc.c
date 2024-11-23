@@ -13,7 +13,7 @@ static SYMWALK(jtdloc,A,BOX,5,2,1,{RZ(*zv++=incorp(sfn(0,d->name))); RZ(*zv++=in
 
 static B jtdrow(J jt,DC si,DC s0,A*zv,UI ncollist,I* collist){A fs,q,*qv,y,z;C c;UI col;
  fs=si->dcf;
- GATV0(q,BOX,!!si->dcx+!!si->dcy,1); qv=AAV(q);  // allo place to store arg list
+ GATV0(q,BOX,!!si->dcx+!!si->dcy,1); qv=AAV1(q);  // allo place to store arg list
  if(si->dcx)RZ(*qv++=incorp(dfrep(si->dcx)));   // fill in x if any
  if(si->dcy)RZ(*qv++=incorp(dfrep(si->dcy)));  // fill in y if any
 
@@ -78,7 +78,7 @@ F1(jtdbcall){A y,*yv,z,zz,*zv;DC si,s0=0;I c=11,m=0,*s;  // c is # columns
  si=jt->sitop;
  NOUNROLL while(si){if(DCCALL==si->dctype)++m; si=si->dclnk;}  // count # rows in result
  GATV0(z,BOX,m*ncollist,2); s=AS(z); s[0]=m; s[1]=ncollist;  // allocate result, install shape
- si=jt->sitop; zv=AAV(z);
+ si=jt->sitop; zv=AAV2(z);
  NOUNROLL while(si){if(DCCALL==si->dctype){RZ(jtdrow(jt,si,s0,zv,ncollist,collist)); zv+=ncollist;} s0=si; si=si->dclnk;}  // create one row for each CALL, in z
  RETF(z);
 }    /* 13!:13 function stack */

@@ -143,8 +143,8 @@ logfirsttime=0; logparm=svlogparm;
 // Return the total length of the data area of y, i. e. the number of bytes from start-of-data to end-of-allocation
 // The allocation size depends on the type of allocation.  The block must not be read-only
 I allosize(A y) {
- if(AFLAG(y)&AFVIRTUAL)R 0;  // if this block is virtual, you can't append to the data, so don't ask about the length
- if(!(AFLAG(y)&(AFNJA))) {
+ if(unlikely(AFLAG(y)&AFVIRTUAL))R 0;  // if this block is virtual, you can't append to the data, so don't ask about the length
+ if(likely(!(AFLAG(y)&(AFNJA)))) {
   // normal block, or SMM.  Get the size from the power-of-2 used to allocate it
   R alloroundsize(y) + (C*)y - CAV(y);  // allocated size
  }
@@ -258,7 +258,7 @@ F1(jtcheckfreepool){
 
 F1(jtspcount){A z;I c=0,i,j,*v;A x;
  ASSERTMTV(w);
- GATV0(z,INT,2*(-PMINL+PLIML+1),2); v=AV(z);
+ GATV0(z,INT,2*(-PMINL+PLIML+1),2); v=AV2(z);
  for(i=PMINL;i<=PLIML;++i){j=0; x=(jt->mempool[-PMINL+i]); NOUNROLL while(x){x=AFCHAIN(x); ++j;} if(j){++c; *v++=(I)1<<i; *v++=j;}}
  v=AS(z); v[0]=c; v[1]=2; AN(z)=2*c;
  RETF(z);
@@ -390,7 +390,7 @@ F1(jtspfor){A*wv,x,y,z;C*s;D*zv;I i,m,n;
  ARGCHK1(w);
  n=AN(w); wv=AAV(w);
  ASSERT(!n||BOX&AT(w),EVDOMAIN);
- GATV(z,FL,n,AR(w),AS(w)); zv=DAV(z); 
+ I zr=AR(w); GATV(z,FL,n,AR(w),AS(w)); zv=DAVn(zr,z); 
  for(i=0;i<n;++i){
   x=C(wv[i]); m=AN(x); s=CAV(x);
   ASSERT(LIT&AT(x),EVDOMAIN);
@@ -406,7 +406,7 @@ F1(jtspforloc){A*wv,x,y,z;C*s;D tot,*zv;I i,j,m,n;L*u;LX *yv,c;
  ARGCHK1(w);
  n=AN(w); wv=AAV(w);
  ASSERT(!n||BOX&AT(w),EVDOMAIN);
- GATV(z,FL,n,AR(w),AS(w)); zv=DAV(z);   // zv-> results
+ I zr=AR(w); GATV(z,FL,n,AR(w),AS(w)); zv=DAVn(zr,z);   // zv-> results
  for(i=0;i<n;++i){   // loop over each name given...
   x=C(wv[i]);  // x is the name/number
   I bucketx;  // will be hash/number for the locale
@@ -813,10 +813,10 @@ A jtrealize(J jt, A w){A z; I t;
  ARGCHK1(w);
  t=AT(w);
  AFLAGPRISTNO(ABACK(w))  // clear PRISTINE in the backer, since its contents are escaping
- GA(z,t,AN(w),AR(w),AS(w));
+ I zr=AR(w); GA(z,t,AN(w),zr,AS(w));
  // new block is not VIRTUAL, not RECURSIBLE
 // copy the contents.
- MC(AV(z),AV(w),AN(w)<<bplg(t));
+ MC(AVn(zr,z),AV(w),AN(w)<<bplg(t));
  R z;
 }
 
@@ -1426,9 +1426,9 @@ void jtrepatsend(J jt){
  jt->repato=0;  // clear repato to empty
  jt=JTFORTHREAD1(jt,origthread1); // switch to the thread the chain must return to
  I zero=0,exsize;
- // Add chain of new blocks to repatq.  AC(repatq) has total alloc size in repatq
- A expval=lda(&jt->repatq); do { AFCHAIN(tail)=expval; AC(repato)=allocsize+(exsize=*(expval?&AC(expval):&zero)); } while(!casa(&jt->repatq, &expval, repato));   // hang old chain off tail; atomic install at head of chain; set new total size
- if(common(((exsize-REPATGCLIM-1)^(exsize+allocsize-REPATGCLIM-1))<0))__atomic_store_n(&jt->uflags.sprepatneeded,1,__ATOMIC_RELEASE); // if amt freed crosses boundary, request reclamation in the home thread
+ // Add chain of new blocks to repatq.  AC(repatq) has total alloc size in repatq.  This code fails if ABA happens in repatq (the count is wrong), but that is vanishingly unlikely
+ A expval=lda(&jt->repatq); do { AFCHAIN(tail)=expval; AC(repato)=allocsize+(exsize=AC(expval?expval:ACLEN0)); } while(!casa(&jt->repatq, &expval, repato));   // hang old chain off tail; atomic install at head of chain; set new total size
+ if(common(((allocsize-REPATGCLIM-1)^(exsize+allocsize-REPATGCLIM-1))<0))__atomic_store_n(&jt->uflags.sprepatneeded,1,__ATOMIC_RELEASE); // if amt freed crosses boundary, request reclamation in the home thread
 #endif
 }
 
@@ -1445,8 +1445,9 @@ void jtrepatrecv(J jt){
    I blockx=FHRHPOOLBIN(AFHRH(p));   // queue number of block
    if (unlikely((jt->memballo[blockx] -= FHRHPOOLBINSIZE(AFHRH(p))) <= 0))jt->uflags.spfreeneeded=1;  // if we have freed enough to call for garbage collection, do
    AFCHAIN(p)=jt->mempool[blockx];  // chain new block at head of queue
-   jt->mempool[blockx]=p;}
+   jt->mempool[blockx]=p;
   }
+ }
 #endif
 }
 
@@ -1617,9 +1618,9 @@ A jtext(J jt,B b,A w){A z;I c,k,m,m1,t;
  ARGCHK1(w);                               /* assume AR(w)&&AN(w)    */
  m=AS(w)[0]; PROD(c,AR(w)-1,AS(w)+1);
  t=AT(w); I bpt=bp(t); k=c*bpt;
- GA00(z,t,2*AN(w)+(AN(w)?0:c),AR(w));  // ensure we allocate SOMETHING to make progress
+ I zr=AR(w); GA00(z,t,2*AN(w)+(AN(w)?0:c),zr);  // ensure we allocate SOMETHING to make progress
  m1=allosize(z)/k;  // start this divide before the copy
- MC(AV(z),AV(w),AN(w)*bpt);                 /* copy old contents      */
+ MC(AVn(zr,z),AV(w),AN(w)*bpt);                 /* copy old contents      */
  MCISH(&AS(z)[1],&AS(w)[1],AR(w)-1);
  if(b){ACINITZAP(z); mf(w);}          // 1=b iff w is permanent.  This frees up the old block but not the contents, which were transferred as is
  AS(z)[0]=m1; AN(z)=m1*c;       /* "optimal" use of space */
@@ -1631,7 +1632,7 @@ A jtexta(J jt,I t,I r,I c,I m){A z;I m1;
  GA00(z,t,m*c,r); 
  I k=bp(t); AS(z)[0]=m1=allosize(z)/(c*k); AN(z)=m1*c;
  if(2==r)*(1+AS(z))=c;
- if(!((t&DIRECT)>0))mvc(k*AN(z),AV(z),MEMSET00LEN,MEMSET00);
+ if(!((t&DIRECT)>0))mvc(k*AN(z),AVn(r,z),MEMSET00LEN,MEMSET00);
  R z;
 }    /* "optimal" allocation for type t rank r, c atoms per item, >=m items */
 

@@ -96,7 +96,7 @@ static A jtrdns(J jt,F f){A za,z;I n=512;size_t r,tr=0;
   tr+=r; if(tr==(U)n){RZ(za=ext(0,za));n*=2;}
  }
  if(tr==(U)n)z=za;
- else {GATV0(z,LIT,(I)tr,1); MC(CAV(z),CAV(za),tr);}
+ else {GATV0(z,LIT,(I)tr,1); MC(CAV1(z),CAV(za),tr);}
  R z;
 }    /* read entire file stream (non-seekable) */
 
@@ -111,7 +111,7 @@ A jtrd(J jt,F f,I j,I n){A z;C*x;I p=0;size_t q=1;
 #endif
 
  clearerr(f);
- GATV0(z,LIT,n,1); x=CAV(z);
+ GATV0(z,LIT,n,1); x=CAV1(z);
  NOUNROLL while(q&&n>p){
   p+=q=fread(p+x,sizeof(C),(size_t)(n-p),f);
   if(ferror(f))R jerrno();
@@ -346,7 +346,7 @@ DF1(jtjgetenv){
   us=_wgetenv(USAV(z));
   if(!us)R num(0);
   GATV0(z,C2T,wcslen(us),1);
-  MC(USAV(z),us,2*wcslen(us));
+  MC(USAV1(z),us,2*wcslen(us));
   R toutf8(z);
  }
 #endif
@@ -464,7 +464,7 @@ finish:
 #if SY_WIN32 && !SY_WINCE
 int rmdir2(J jt, const wchar_t *dir){A z;US*zv;
  SHFILEOPSTRUCTW sh;
- GATV0(z,C2T,wcslen(dir)+2,1); zv=USAV(z);
+ GATV0(z,C2T,wcslen(dir)+2,1); zv=USAV1(z);
  MC(zv,dir,wcslen(dir)*sizeof(wchar_t));
  zv[1+wcslen(dir)]=zv[wcslen(dir)]=0;  // doubly null terminated string
  sh.hwnd   = NULL;

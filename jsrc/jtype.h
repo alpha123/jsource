@@ -282,20 +282,38 @@ struct AD {
 #define RCALIGN         1   // the rank to use to put the data on a cacheline boundary
 
 #define AV(x)           ( (I*)((C*)(x)+AK(x)))  /* pointer to ravel        */
+#define AVn(n,x)          ( (I*)((C*)(x)+AKXR(n)))  // local array ravel
+#define AV0(x)           ( (I*)((C*)(x)+AKXR(0)))  // local atom ravel
+#define AV1(x)           ( (I*)((C*)(x)+AKXR(1)))  // pointer to ravel in known-local list
+#define AV2(x)           ( (I*)((C*)(x)+AKXR(2)))  // pointer to ravel in known-local table
+#define AV3(x)           ( (I*)((C*)(x)+AKXR(3)))  // pointer to ravel in known-local brick
 #define BAV(x)          (      (B*)(x)+AK(x) )  /* boolean                 */
+#define BAVn(n,x)         (      (B*)(x)+AKXR(n) )  // boolean non-virtual rank n
 #define BAV1(x)         (      (B*)(x)+AKXR(1) )  // boolean non-virtual rank 1
+#define BAV2(x)         (      (B*)(x)+AKXR(2) )  // boolean non-virtual rank 2
 #define CAV(x)          (      (C*)(x)+AK(x) )  /* character               */
+#define CAVn(n,x)         (((C*)(x)+AKXR(n)))  // character in non-virtual rank-n array
 #define CAV0(x)         (((C*)(x)+AKXR(0)))  // character in non-virtual rank-0 array  (allocated as rank 0, that is)
 #define CAV1(x)         (((C*)(x)+AKXR(1)))  // character in non-virtual rank-1 array
 #define CAV2(x)         (((C*)(x)+AKXR(2)))  // character in non-virtual rank-2 array
 #define UCAV(x)         (     (UC*)(x)+AK(x) )  /* unsigned character      */
+#define UCAV0(x)        (     (UC*)(x)+AKXR(0) )  // local unsigned character atom
 #define EAV(x)          ( (E*)((C*)(x)+AK(x)))  /* quad-prec                */
 #define DSAV(x)          ( (DS*)((C*)(x)+AK(x)))  /* single-prec                */
 #define USAV(x)         ((US*)((C*)(x)+AK(x)))  /* wchar                   */
+#define USAVn(n,x)         ((US*)((C*)(x)+AKXR(n)))  // local wchar atom
+#define USAV0(x)         ((US*)((C*)(x)+AKXR(0)))  // local wchar atom
+#define USAV1(x)         ((US*)((C*)(x)+AKXR(1)))  // local wchar list
 #define UAV(x)          (     (UC*)(x)+AK(x) )  /* unsigned character      */
+#define UAVn(n,x)        (     (UC*)(x)+AKXR(n) )  // local unsigned character list
+#define UAV1(x)         (     (UC*)(x)+AKXR(1) )  // local unsigned character list
 #define UIAV(x)         ((UI*)((C*)(x)+AK(x)))  /* unsigned integer      */
 #define UI4AV(x)        ((UI4*)((C*)(x)+AK(x)))  /* unsigned 32-bit int      */
+#define UI4AV0(x)       ((UI4*)((C*)(x)+AKXR(0)))  // local unsigned 32-bit int atom
+#define UI4AV1(x)       ((UI4*)((C*)(x)+AKXR(1)))  // local unsigned 32-bit int list
 #define C4AV(x)         ((C4*)((C*)(x)+AK(x)))  /* literal4                */
+#define C4AVn(n,x)      ((C4*)((C*)(x)+AKXR(n)))  // local literal4 list
+#define C4AV1(x)        ((C4*)((C*)(x)+AKXR(1)))  // local literal4 list
 #define NAV(x)          ((NM*)((C*)(x)+AKXR(1)))  // name, which is always allocated as rank 1, for some reason
 #define NAVV(x)         ((volatile NM*)((C*)(x)+AKXR(1)))  // name, which is always allocated as rank 1, for some reason
 #define IAV(x)          AV(x)                   /* integer                 */
@@ -303,22 +321,34 @@ struct AD {
 #define I2AV(x)         ( (I2*)((C*)(x)+AK(x)))  /* pointer to ravel        */
 #define I4AV(x)         ( (I4*)((C*)(x)+AK(x)))  /* pointer to ravel        */
 #define I8AV(x)         ( (I8*)((C*)(x)+AK(x)))  /* pointer to ravel        */
+#define IAVn(n,x)       ((I*)((C*)(x)+AKXR(n)))  // integer in a stack- or heap-allocated atom (rank n
 #define IAV0(x)         ((I*)((C*)(x)+AKXR(0)))  // integer in a stack- or heap-allocated atom (rank 0 - used for internal tables)
-#define UIAV1(x)         ((UI*)((C*)(x)+AKXR(1)))  // unsigned integer "limb" in an X (or Q) value
 #define IAV1(x)         ((I*)((C*)(x)+AKXR(1)))  // integer in a stack- or heap-allocated list (rank 1 - used for internal tables that need alignment or need AS[0])
 #define IAV2(x)         ((I*)((C*)(x)+AKXR(2)))  // integer in a stack- or heap-allocated list (rank 2)
+#define UIAV1(x)         ((UI*)((C*)(x)+AKXR(1)))  // unsigned integer "limb" in an X (or Q) value
 #define BAV0(x)         ( (C*)((C*)(x)+AKXR(0)) )  // Boolean when rank is 0 - fixed position (known to avoid segfault)
 #define LXAV0(x)        ( (LX*)((C*)(x)+AKXR(0)) )  // Symbol when rank is 0 - fixed position (for SYMB hash tables).  Note AK() is used in SYMB tables
 #define LAV0(x)         ( (L*)((C*)(x)+AKXR(0)) )  // Symbol array when rank is 0 - used for the symbol pool
 #define DAV(x)          ( (D*)((C*)(x)+AK(x)))  /* double                  */
+#define DAVn(n,x)         ( (D*)((C*)(x)+AKXR(n)))  // double array
 #define DAV0(x)         ( (D*)((C*)(x)+AKXR(0)))  // double atom
+#define DAV1(x)         ( (D*)((C*)(x)+AKXR(1)))  // double list
 #define DAV2(x)         ( (D*)((C*)(x)+AKXR(2)) )  // Double when rank is 2 - fixed position (for matrix inversion)
 #define ZAV(x)          ( (Z*)((C*)(x)+AK(x)))  /* complex                 */
+#define ZAVn(n,x)         ( (Z*)((C*)(x)+AKXR(n)))  // local complex array
+#define ZAV0(x)         ( (Z*)((C*)(x)+AKXR(0)))  // local complex atom
+#define ZAV1(x)         ( (Z*)((C*)(x)+AKXR(1)))  // local complex list
 #define XAV(x)          ( (X*)((C*)(x)+AK(x)))  /* extended                */
-#define XAV0(x)         ( (X*)((C*)(x)+AKXR(0)))  /* extended                */
+#define XAVn(n,x)       ( (X*)((C*)(x)+AKXR(n)))  // local extended atom
+#define XAV0(x)         ( (X*)((C*)(x)+AKXR(0)))  // local extended atom
+#define XAV1(x)         ( (X*)((C*)(x)+AKXR(1)))  // local extended list
+#define XAV2(x)         ( (X*)((C*)(x)+AKXR(2)))  // local extended brick
 #define QAV(x)          ( (Q*)((C*)(x)+AK(x)))  /* rational                */
-#define AAV(x)          ( (A*)((C*)(x)+AK(x)))  /* boxed                   */
+#define QAV0(x)         ( (Q*)((C*)(x)+AKXR(0)))  // local rational atom
+#define QAV1(x)         ( (Q*)((C*)(x)+AKXR(1)))  // local rational list
 #define EAV(x)          ( (E*)((C*)(x)+AK(x)))  /* QP                 */
+#define AAV(x)          ( (A*)((C*)(x)+AK(x)))  /* boxed                   */
+#define AAVn(n,x)         ((A*)((C*)(x)+AKXR(n)))  // A block in a stack- or heap-allocated atom (rank n)
 #define AAV0(x)         ((A*)((C*)(x)+AKXR(0)))  // A block in a stack- or heap-allocated atom (rank 0 - used for internal tables)
 #define AAV1(x)         ((A*)((C*)(x)+AKXR(1)))  // A block in a stack- or heap-allocated list (rank 1)
 #define AAV2(x)         ((A*)((C*)(x)+AKXR(2)))  // A block in a stack- or heap-allocated list (rank 2)
@@ -327,13 +357,16 @@ struct AD {
 #define FAVV(x)         ( (volatile V*)((C*)(x)+AKXR(0)) )  // verb, adverb, conj volatile to avoid delayed fetch
 #define PAV(x)          ( (P*)((C*)(x)+AK(x)))  /* sparse                  */
 #define SBAV(x)         ((SB*)((C*)(x)+AK(x)))  /* symbol                  */
+#define SBAVn(n,x)        ((SB*)((C*)(x)+AKXR(n)))  // local symbol
+#define SBAV0(x)        ((SB*)((C*)(x)+AKXR(0)))  // local symbol atom
+#define SBAV1(x)        ((SB*)((C*)(x)+AKXR(1)))  // local symbol list
 #define SBUV4(x)        ((SBU*)((C*)(x)+AKXR(4)))  // symbol, nonvirtual rank 4
 #define voidAV(x)       ((void*)((C*)(x)+AK(x)))  // unknown
-#define voidAVn(x,n)     ((void*)((C*)(x)+AKXR(n)))  // unknown, but rank is known
-#define voidAV0(x)       voidAVn(x,0)  // unknown, but scalar
-#define voidAV1(x)       voidAVn(x,1)  // unknown, but list
-#define voidAV2(x)       voidAVn(x,2)  // unknown, but table
-#define voidAVCACHE(x)   voidAVn(x,RCALIGN)  // unknown, aligned to cache
+#define voidAVn(n,x)     ((void*)((C*)(x)+AKXR(n)))  // unknown, but rank is known
+#define voidAV0(x)       voidAVn(0,x)  // unknown, but scalar
+#define voidAV1(x)       voidAVn(1,x)  // unknown, but list
+#define voidAV2(x)       voidAVn(2,x)  // unknown, but table
+#define voidAVCACHE(x)   voidAVn(RCALIGN,x)  // unknown, aligned to cache
 #define UNLXAV0(x)      ((A)((I)(x)-AKXR(0)))   // go from a pointer to LXAV0 back to the base of the A block
 #define UNvoidAV0(x)     ((A)((I)(x)-AKXR(0)))   // go from a pointer to *AV0 back to the base of the A block
 #define UNvoidAV1(x)     ((A)((I)(x)-AKXR(1)))   // go from a pointer to *AV1 back to the base of the A block
@@ -627,11 +660,11 @@ struct AD {
 #define ASGNINPLACENEG(s,w)  ((s)&(AC(w)|SGNIF(jt->zombieval==w,0)))   // neg if OK to inplace ordinary operation, either because the block is inplaceable or because it's an assignment to zombie
 #define ASGNINPLACESGN(s,w)  (ASGNINPLACENEG(s,w)<0)
 #define ASGNINPLACESGNNJA(s,w)  ASGNINPLACESGN(s,w)
-// define virtreqd and set it to 0 to start
+// define virtreqd and set it to 0 to start, and lgatomsini to lg(#atoms of type in an I)
 // This is used in apip.  We must ALWAYS allow inplacing for NJA types, but for ordinary inplacing we don't bother if the number of atoms of w pushes a over a power-of-2 boundary
 #define EXTENDINPLACENJA(a,w) \
-  ( ((AC(a)&((((AN(a)+NORMAH+1-1)+AN(w))^(AN(a)+NORMAH+1-1))-(AN(a)+NORMAH+1-1)))<0) || /* inplaceable value that will probably fit */ \
-    ( ((((((AN(a)+NORMAH+1-1)+AN(w))^(AN(a)+NORMAH+1-1))-(AN(a)+NORMAH+1-1))|SGNIF(AFLAG(a),AFNJAX))<0) &&  /* value will probably fit OR is NJA, where any fit MUST be used */\
+  ( ((AC(a)&((((AN(a)+((NORMAH+1)<<lgatomsini)-1)+AN(w))^(AN(a)+((NORMAH+1)<<lgatomsini)-1))-(AN(a)+((NORMAH+1)<<lgatomsini)-1)))<0) || /* inplaceable value that will probably fit */ \
+    ( ((((((AN(a)+((NORMAH+1)<<lgatomsini)-1)+AN(w))^(AN(a)+((NORMAH+1)<<lgatomsini)-1))-(AN(a)+((NORMAH+1)<<lgatomsini)-1))|SGNIF(AFLAG(a),AFNJAX))<0) &&  /* value will probably fit OR is NJA, where any fit MUST be used */\
       (jt->zombieval==a || (virtreqd=(AFLAG(a)>>AFKNOWNNAMEDX)&(((AC(a)^ACUC2)|(AFLAG(a)&(AFRO|AFVIRTUAL)))==0))>(UI)jt->zombieval) /* asg-in-place or virt extension.  Remember if virt extension  */ \
         /* virt extension is (x { (a , item)).  We require a to be named so that we know that usecount of 2 means value is stacked only once */ \
         /* we require zombieval=0 so that (a =. b , 5) will not create a virtual that must immediately be realized */ \
@@ -1007,6 +1040,7 @@ typedef struct {
  } data;
 } IH;
 #define IHAV(x)         ((IH*)((C*)(x)+AK(x)))  //  how to refer to the header area
+#define IHAV0(x)         ((IH*)((C*)(x)+AKXR(0)))  //  how to refer to the header area when it has rank 0
 
 // Return value from condrange
 typedef struct {
@@ -1284,7 +1318,7 @@ typedef struct {
 #define VF2CACHED  ((I)(((I)1)<<VF2CACHEDX))
 
 // layout of primitive, in the primtbl.  It is a memory header (shape 0) followed by a V
-typedef struct __attribute__((aligned(CACHELINESIZE))) {I memhdr[AKXR(0)/SZI]; union { V primvb; I primint; D primfl; } prim; } PRIM;  // two cachelines exactly in 64-bit
+typedef struct __attribute__((aligned(CACHELINESIZE))) {I memhdr[AKXR(0)/SZI]; union { V primvb; I primint; UI8 primfl; } prim; } PRIM;  // two cachelines exactly in 64-bit
 
 // Canned blocks
 // NOTE: for fetching IDs we use the validitymask as a safe place to fetch 0s from.  We know that
@@ -1294,6 +1328,7 @@ typedef struct __attribute__((aligned(CACHELINESIZE))) {I memhdr[AKXR(0)/SZI]; u
 #define FUNCID0 ((A)(validitymask-4*(!SY_64)))  // 0 in index [15] ([19] for 32-bit), which has a 0 in the id field of V
 #define SYMVAL0 ((L*)(validitymask+12))  // 0 0, which has a 0 in the val field of L
 #define AFLAG0 ((A)(validitymask+12))  // 0 0, which has a 0 in the flag field of A
+#define ACLEN0 ((A)(validitymask+12-4))  // x x x x 0 0, which has a 0 in the AC field
 #define ZAPLOC0 ((A*)(validitymask+12))  // 0 used as a pointer to a null tpop-stack value
 #define PSTK2NOTFINALASGN ((PSTK*)(validitymask+12)-2)  // 0 in position [2], signifying NOT final assignment (used for errors)
 #define BREAK0 ((C*)(validitymask+12))  // 0 to indicate no ATTN requested

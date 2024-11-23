@@ -6,6 +6,10 @@
 #define ZZDEFN
 #include "result.h"
 
+#ifdef BOXEDSPARSE
+extern UC fboxedsparse;
+#endif
+
 I level(J jt,A w){A*wv;I d,j;
  ARGCHK1(w);
  if((-AN(w)&-(AT(w)&BOX))>=0)R 0;
@@ -31,6 +35,8 @@ F1(jtbox){A y,z,*zv;C*wv;I f,k,m,n,r,wr,*ws;
  F1PREFIP;ARGCHK1(w);I wt=AT(w); FLAGT waf=AFLAG(w);
 #ifndef BOXEDSPARSE
  ASSERTF(!ISSPARSE(wt),EVNONCE,"can't box sparse arrays");
+#else
+ ASSERTF(fboxedsparse||!ISSPARSE(wt),EVNONCE,"can't box sparse arrays");
 #endif
  wr=AR(w); r=(RANKT)jt->ranks; r=wr<r?wr:r; f=wr-r;   // no RESETRANK because we call no primitives
  if(likely(!f)){
@@ -54,7 +60,7 @@ F1(jtbox){A y,z,*zv;C*wv;I f,k,m,n,r,wr,*ws;
  } else {
   // <"r
 #ifdef BOXEDSPARSE
- ASSERTF(!ISSPARSE(wt),EVNONCE,"can't box sparse arrays");    // <"r not implemented
+ ASSERTF(fboxedsparse||!ISSPARSE(wt),EVNONCE,"can't box sparse arrays");    // <"r not implemented
 #endif
   ws=AS(w);
   CPROD(AN(w),n,f,ws); CPROD(AN(w),m,r,f+ws);
@@ -71,12 +77,12 @@ F1(jtbox){A y,z,*zv;C*wv;I f,k,m,n,r,wr,*ws;
   // inplaceable with a free on the tstack.
   // To avoid the tstack overhead, we switch the tpush pointer to our data area, so that blocks are filled in as they are allocated, with nothing put
   // onto the real tpop stack.  If we hit an error, that's OK, because whatever we did get allocated will be freed when the result block is freed.  We use GAE so that we don't abort on error
-  A *pushxsave = jt->tnextpushp; jt->tnextpushp=AAV(z);  // save tstack info before allocation
+  A *pushxsave = jt->tnextpushp; jt->tnextpushp=AAVn(f,z);  // save tstack info before allocation
   JMCDECL(endmask) JMCSETMASK(endmask,k,0)   // set mask for JMCR - OK to copy SZIs
   A wback=ABACK(w); wback=AFLAG(w)&AFVIRTUAL?wback:w;   // w is the backer for new blocks unless it is itself virtual
   while(n--){
    if(!((I)jtinplace&JTWILLBEOPENED)){
-    GAE(y,wt,m,r,f+ws,break); JMCR(CAV(y),wv,k,0,endmask); INCORPRAZAPPED(y,wt);   // allocate, but don't grow the tstack.  Set usecount of cell to 1.  ra0() if recursible.  Put allocated addr into *jt->tnextpushp++
+    GAE(y,wt,m,r,f+ws,break); JMCR(CAVn(r,y),wv,k,0,endmask); INCORPRAZAPPED(y,wt);   // allocate, but don't grow the tstack.  Set usecount of cell to 1.  ra0() if recursible.  Put allocated addr into *jt->tnextpushp++
    }else{
     // WILLBEOPENED case.  We must make the block virtual.  We avoid the call overhead
     if((y=gafv(SZI*(NORMAH+wr)-1))==0)break;  // allocate the block, abort loop if error
@@ -125,6 +131,8 @@ F2PREFIP;ARGCHK2(a,w);
 #endif
 #ifndef BOXEDSPARSE
  ASSERTF(!ISSPARSE(AT(a)|AT(w)),EVNONCE,"can't box sparse arrays");
+#else
+ ASSERTF(fboxedsparse||!ISSPARSE(AT(a)|AT(w)),EVNONCE,"can't box sparse arrays");
 #endif
  I optype=FAV(self)->localuse.lu1.linkvb;  // flag: sign set if (,<) or ,&< or (;<) which will always box w; bit 0 set if (,<)
  optype|=((I)jtinplace&JTWILLBEOPENED)<<(BOXX-JTWILLBEOPENEDX);  // fold in BOX flag that tells us to allow virtual boxed results
@@ -412,7 +420,7 @@ static B povtake(J jt,A a,A w,C*x){B b;C*v;I d,i,j,k,m,n,p,q,r,*s,*ss,*u,*uu,y;
 
 static B jtopes1(J jt,B**zb,A*za,A*ze,I*zm,A cs,A w){A a,e=0,q,*wv,x;B*b;I i,k,m=0,n,*v,wcr;P*p;
  n=AN(w); wcr=AN(cs); wv=AAV(w);
- GATV0(x,B01,wcr,1); b=BAV(x); mvc(wcr,b,MEMSET00LEN,MEMSET00);
+ GATV0(x,B01,wcr,1); b=BAV1(x); mvc(wcr,b,MEMSET00LEN,MEMSET00);
  for(i=0;i<n;++i)
   if(q=C(wv[i]),ISSPARSE(AT(q))){
    p=PAV(q); x=SPA(p,x); m+=AS(x)[0];
@@ -453,12 +461,12 @@ static A jtopes(J jt,I zt,A cs,A w){A a,d,e,sh,t,*wv,x,x1,y,y1,z;B*b;C*xv;I an,*
  GASPARSE0(z,zt,1,wr+wcr); zs=AS(z); MCISH(zs,AS(w),wr); MCISH(zs+wr,AV(cs),wcr);
  zp=PAV(z); c=wcr-an; yc=wr+an;
  SPB(zp,e,cvt(dt,e)); e = SPA(zp,e);  // in case of reassignment by SPB
- GATV0(t,INT,yc, 1L); v=AV(t); DO(wr, v[i]=i;); DO(an, v[wr+i]=wr+av[i];); SPB(zp,a,t);
- GATV0(sh,INT,1+c,1L); s=AV(sh); s[0]=m; j=1; DO(wcr, if(!b[i])s[j++]=zs[wr+i];); 
+ GATV0(t,INT,yc, 1L); v=AVn(1L,t); DO(wr, v[i]=i;); DO(an, v[wr+i]=wr+av[i];); SPB(zp,a,t);
+ GATV0(sh,INT,1+c,1L); s=AVn(1L,sh); s[0]=m; j=1; DO(wcr, if(!b[i])s[j++]=zs[wr+i];); 
  RE(xc=prod(c,1+s)); xk=xc*dk;
- GATV0(d,INT,wr,1); dv=AV(d); mvc(wr*SZI,dv,MEMSET00LEN,MEMSET00);
- DPMULDE(m,xc,i) GA(x,dt,i,1+c,s); xv=CAV(x); mvc(m*xk,xv,dk,AV(e));
- DPMULDE(m,yc,i) GATV0(y,INT,i,2L); v=AS(y); *v=m; v[1]=yc; yv=AV(y); mvc(SZI*i,yv,MEMSET00LEN,MEMSET00);
+ GATV0(d,INT,wr,1); dv=AV1(d); mvc(wr*SZI,dv,MEMSET00LEN,MEMSET00);
+ DPMULDE(m,xc,i) GA(x,dt,i,1+c,s); xv=CAVn(1+c,x); mvc(m*xk,xv,dk,AV(e));
+ DPMULDE(m,yc,i) GATV0(y,INT,i,2L); v=AS(y); *v=m; v[1]=yc; yv=AVn(2L,y); mvc(SZI*i,yv,MEMSET00LEN,MEMSET00);
  for(i=p=0;i<n;++i){
   RZ(opes2(&x1,&y1,b,a,e,C(wv[i]),wcr)); v=AS(y1); m1=v[0]; k=v[1];
   if(m<p+m1){
@@ -602,7 +610,7 @@ static A jtrazeg(J jt,A w,I t,I n,I r,A*v){A h,h1,y,z;C*zu;I c=0,i,j,k,m,*s,*v1,
  k=bpnoun(t); p*=k;  // k=#bytes in atom of result; p=#bytes/result cell
  fauxblockINT(h1faux,4,1); fauxINT(h1,h1faux,r,1) v1=AV(h1);  // create place to hold shape of cell after rank extension
  GA(z,t,m,r,s);    // create result area, shape s; zrel now is relocation offset for result
- zu=CAV(z);  // output pointers
+ zu=CAVn(r,z);  // output pointers
  // loop through each contents and copy to the result area
  for(i=0;i<n;++i){
   y=C(v[i]);  // y->address of A block for v[i]
@@ -656,8 +664,8 @@ F1(jtraze){A*v,y,z;C* RESTRICT zu;I *wws,d,i,klg,m=0,n,r=1,t=0,te=0;
   // fall through for boxes containing lists and atoms, where the result is a list.  No fill possible, but if all inputs are
   // empty the fill-cell will give the type of the result (similar to 0 {.!.f 0$...)
 
-  GA0(z,t,m,r);  // allocate the result area (rank 1)
-  zu=CAV(z); klg=bplg(t); // input pointers, depending on type; length of an item
+  GA0(z,t,m,1);  // allocate the result area (rank 1)
+  zu=CAV1(z); klg=bplg(t); // input pointers, depending on type; length of an item
   // loop through the boxes copying
   for(i=0;i<n;++i){
    y=C(v[i]); if(AN(y)){if(TYPESNE(t,AT(y)))RZ(y=cvt(t,y)); d=AN(y)<<klg; MC(zu,AV(y),d); zu+=d;}
@@ -669,7 +677,7 @@ F1(jtraze){A*v,y,z;C* RESTRICT zu;I *wws,d,i,klg,m=0,n,r=1,t=0,te=0;
   PROD(m,r-1,wws+1);  // get #atoms in an item of w
   I nitems=AS(w)[0];  // total # result items is stored in w
   GA(z,t,m*nitems,r,wws); AS(z)[0]=nitems; // allocate the result area; finish shape
-  zu=CAV(z); klg=bplg(t); // input pointers, depending on type; length of an item
+  zu=CAVn(r,z); klg=bplg(t); // input pointers, depending on type; length of an item
   // loop through the boxes copying the data into sequential output positions.  pyx impossible
   DO(n, y=v[i]; d=AN(y)<<klg; JMC(zu,AV(y),d,0); zu+=d;)   // copy the items
  }
@@ -690,7 +698,7 @@ F1(jtrazeh){A*wv,y,z;C*xv,*yv,*zv;I c=0,ck,dk,i,k,n,p,r,*s,t;
   z=jtra(w,BOX,z); AFLAGORLOCAL(z,BOX)
   PRISTCLRF(w);   // contents have escaped.  w is no longer used
  }
- zv=CAV(z); ck=c*k;  // ck is length of one row in bytes
+ zv=CAV2(z); ck=c*k;  // ck is length of one row in bytes
  for(i=0;i<n;++i){
   // zv is the start of the next output position in the first row
   y=C(wv[i]); dk=1==AR(y)?k:k*AS(y)[1];  // y is contents of this box; dk is # atoms in each row of THIS Input box;

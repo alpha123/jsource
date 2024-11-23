@@ -27,6 +27,7 @@ extern F1(jtbehead);
 extern F1(jtbinrep1);
 // extern F1(jtbitadv);
 extern F1(jtbox);
+extern F1(jtboxedsparse);
 extern F1(jtboxopen);
 extern F1(jtboxq);
 extern F1(jtboxs);
@@ -1052,6 +1053,8 @@ extern I Baqq[];
 #define aqq ((A)&Baqq)
 extern I Bmtv[];
 #define mtv ((A)&Bmtv)
+extern I Bmtvi[];
+#define mtvi ((A)&Bmtvi)
 extern I Bmtm[];
 #define mtm ((A)&Bmtm)
 extern I Basgnlocsimp[];
@@ -1086,7 +1089,7 @@ extern I Biv0[];
 #define iv0 ((A)&Biv0)
 extern I Biv1[];
 #define iv1 ((A)&Biv1)
-extern D        jnan;           /* "nan" name conflict under Solaris       */
+// obsolete extern D        jnan;           /* "nan" name conflict under Solaris       */
 extern A        mnuvxynam[6];
 extern void     moveparseinfotosi(J);
 extern I Bnum[][8*(2-SY_64)];

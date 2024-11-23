@@ -37,7 +37,7 @@ static REPF(jtrepzsx){A q,x,y;I c,d,j,k=-1,m,p=0,*qv,*xv,*yv;P*ap;
   ASSERT(k<=IMAX-1,EVLIMIT);
   if(c==k)RZ(w=irs2(sc(1+k),w,0L,0L,wcr,jttake));
   DO(2*m, ASSERT(0<=xv[i],EVDOMAIN); p+=xv[i]; ASSERT(0<=p,EVLIMIT););
-  GATV0(q,INT,p,1); qv=AV(q);
+  GATV0(q,INT,p,1); qv=AV1(q);
   DO(m, c=*xv++; d=*xv++; j=yv[i]; DQ(c, *qv++=j;); DQ(d, *qv++=k;);); 
   R irs2(q,w,0L,1L,wcr,jtfrom);
  }
@@ -65,8 +65,8 @@ static REPF(jtrepbdx){A z;I c,k,m,p;
  if(!ASGNINPLACESGN(SGNIF(jtinplace,JTINPLACEWX)&(m-2*p)&(-(AT(w)&DIRECT)),w)) {
   // normal non-in-place copy
     // no overflow possible unless a is empty; nothing  moved then, and zn is 0
-  GA00(z,AT(w),zn,AR(w)); MCISH(AS(z),AS(w),AR(w)) // allocate result
-  zvv=voidAV(z);  // point to the output area
+  I zr=AR(w); GA00(z,AT(w),zn,zr); MCISH(AS(z),AS(w),zr) // allocate result
+  zvv=voidAVn(zr,z);  // point to the output area
   // if blocks abandoned, pristine status can be transferred to the result, because we know we are not repeating any cells
   AFLAGORLOCAL(z,PRISTFROMW(w))  // result pristine if inplaceable input was - w prist cleared later
 #if C_AVX2 || EMU_AVX2
@@ -171,7 +171,7 @@ static REPF(jtrepbsx){A ai,c,d,e,g,q,x,wa,wx,wy,y,y1,z,zy;B*b;I*dv,*gv,j,m,n,*u,
  x=SPA(ap,x); n=AN(x); b=BAV(x);
  if(!AN(SPA(ap,a)))R irs2(ifb(n,b),w,0L,1L,wcr,jtfrom);
  if(!*BAV(e)){
-  GATV0(q,INT,n,1); v=v0=AV(q); 
+  GATV0(q,INT,n,1); v=v0=AV1(q); 
   DO(n, if(*b++)*v++=u[i];); 
   AN(q)=AS(q)[0]=v-v0; 
   R irs2(q,w,0L,1L,wcr,jtfrom);
@@ -185,9 +185,9 @@ static REPF(jtrepbsx){A ai,c,d,e,g,q,x,wa,wx,wy,y,y1,z,zy;B*b;I*dv,*gv,j,m,n,*u,
  RZ(y1=fromr(c,wy));
  RZ(q=not(eps(y1,ravel(repeat(not(x),y)))));
  m=AS(a)[0]-m;
- GATV0(ai,INT,m,1); v=AV(ai); DO(n, if(!*b++)*v++=u[i];);
+ GATV0(ai,INT,m,1); v=AV1(ai); DO(n, if(!*b++)*v++=u[i];);
  RZ(g=grade1(over(ai,repeat(q,y1)))); gv=AV(g);
- GATV0(d,INT,AN(y1),1); dv=AV(d); j=0; DO(AN(g), if(m>gv[i])++j; else dv[gv[i]-m]=j;);
+ GATV0(d,INT,AN(y1),1); dv=AV1(d); j=0; DO(AN(g), if(m>gv[i])++j; else dv[gv[i]-m]=j;);
  RZ(zy=mkwris(repeat(q,wy))); v=AV(zy)+*AV(c); m=AS(zy)[1]; DO(AS(zy)[0], *v-=dv[i]; v+=m;);
  zp=PAV(z);
  SPB(zp,a,ca(wa));
@@ -211,7 +211,7 @@ static REPF(jtrepidx){A y;I j,m,p=0,*v,*x;A z;
  ASSERT(anylt0>=0,EVDOMAIN) ASSERT(anyofl>=0,EVLIMIT);
 #endif
  if(unlikely(ISSPARSE(AT(w)))){
-  GATV0(y,INT,p,1); v=AV(y); 
+  GATV0(y,INT,p,1); v=AV1(y); 
   DO(m, j=i; DQ(x[j], *v++=j;););  // fill index vector with all the indexes
   R IRS2(y,w,0L,1L,wcr,jtfrom,z);
  }else{I itemsize, ncells, zn, j;  // # atoms in an item (then bytes), #cells to process, #atoms in result
@@ -224,8 +224,8 @@ static REPF(jtrepidx){A y;I j,m,p=0,*v,*x;A z;
 #define itemsize 0
 #endif
   // If we are moving 8-byte items, we extend the allocation so that we can overstore up to 4 words.  This allows us to avoid remnant handling
-  GA00(z,AT(w),zn+(itemsize<<LGNPAR),AR(w)+!wcr); MCISH(AS(z),AS(w),AR(z)) AS(z)[wf]=p; AN(z)=zn;  // allo result, copy shape but replace the lengthened axis, which may be added
-  C *zv=CAV(z);  // output fill pointer
+  I zr=AR(w)+!wcr; GA00(z,AT(w),zn+(itemsize<<LGNPAR),zr); MCISH(AS(z),AS(w),zr) AS(z)[wf]=p; AN(z)=zn;  // allo result, copy shape but replace the lengthened axis, which may be added
+  C *zv=CAVn(zr,z);  // output fill pointer
   C *wv=CAV(w);  // input item pointer, increments over input cells
   for(;ncells;--ncells){  // for each result cell
    // make x[j] copies of item wv[j]
@@ -279,7 +279,7 @@ static REPF(jtrepisx){A e,q,x,y;I c,j,m,p=0,*qv,*xv,*yv;P*ap;
  if(!*AV(e)){
   m=AN(x);  
   DO(m, ASSERT(0<=xv[i],EVDOMAIN); p+=xv[i]; ASSERT(0<=p,EVLIMIT););
-  GATV0(q,INT,p,1); qv=AV(q); 
+  GATV0(q,INT,p,1); qv=AV1(q); 
   DO(m, c=xv[i]; j=yv[i]; DQ(c, *qv++=j;);); 
   R irs2(q,w,0L,1L,wcr,jtfrom);
  }
@@ -302,9 +302,9 @@ static REPF(jtrep1d){A z;C*wv,*zv;I c,k,m,n,p=0,q,t,*ws,zk,zn;
  }
  DPMULDE(p,n,q);  // q=length of result item  axis.  +/a copies, each of length n
  DPMULDE(p,AN(w),zn);
- GA00(z,AT(w),zn,AR(w)+!wcr); MCISH(AS(z),AS(w),AR(z)) AS(z)[wf]=q;
+ I zr=AR(w)+!wcr; GA00(z,AT(w),zn,zr); MCISH(AS(z),AS(w),zr) AS(z)[wf]=q;
  if(!zn)R z;
- wv=CAV(w); zv=CAV(z);
+ wv=CAV(w); zv=CAVn(zr,z);
  PROD(c,wf+(I )(wcr!=0),ws); PROD(k,wcr-1,ws+wf+1); k <<=bplg(AT(w));  // c=#cell-items to process  k=#atoms per cell-item
  zk=p*k;  // # bytes to fill per item
  DQ(c, mvc(zk,zv,k,wv); zv+=zk; wv+=k;);
@@ -339,7 +339,7 @@ static REPF(jtrep1s){A ax,e,x,y,z;B*b;I c,d,cd,j,k,m,n,p,q,*u,*v,wr,*ws;P*wp,*zp
    if(AN(ax)==1+j){u+=j; DO(p, m=cd**u; u+=q; DO(c, *v=m+i; v+=q;););}  // if replicating the last sparse axis, simply turn each index into an interval of indexes
    else{A xx;I h,i,j1=1+j,*uu;   // replicating interior axis.  For each replicated index, we must count the number of nonsparse values that share the prefix.  j1 is index of the first sparse axis in the replicated cell
     // v has replicated index lists
-    GATV0(xx,INT,j1,1); uu=AV(xx);  // allocate vector that will hold the prefix, i. e. the sparse axes
+    GATV0(xx,INT,j1,1); uu=AV1(xx);  // allocate vector that will hold the prefix, i. e. the sparse axes
     k=0; DO(j1, uu[i]=u[i];);   // initialize uu to the sparse indexes in the first row of input indexes.  k is start of matching area
     for(i=0;;++i,u+=q)   // for each input row...
      if(i==p||ICMP(uu,u,j1)){   // if we hit end-of-input or there is a change in the prefix...

@@ -326,7 +326,7 @@ static A wtownull(J jt,A w){US *wv,*zv;I n,i,nignulls=0,naddednulls=0;A z;
  // If no padding is needed, no copy is required
  if(!naddednulls)R w;
  // Allocate result and copy the string, adding null padding where needed
- GATV0(z,C2T,n+naddednulls,1); zv=USAV(z);
+ GATV0(z,C2T,n+naddednulls,1); zv=USAV1(z);
  nignulls = 0;
  for(i=0;i<n;++i){
   if(nignulls && (--nignulls,wv[i]==0));  // If an added null is already present, skip the copy
@@ -347,7 +347,7 @@ static A utounull(J jt,A w){C4 *wv,*zv;I n,i,nignulls=0,naddednulls=0;A z;
  // If no padding is needed, no copy is required
  if(!naddednulls)R w;
  // Allocate result and copy the string, adding null padding where needed
- GATV0(z,C4T,n+naddednulls,1); zv=C4AV(z);
+ GATV0(z,C4T,n+naddednulls,1); zv=C4AV1(z);
  nignulls = 0;
  for(i=0;i<n;++i){
   if(nignulls && (--nignulls,wv[i]==0));  // If an added null is already present, skip the copy
@@ -421,13 +421,13 @@ A RoutineA(J jt,A w,A prxthornuni){A z;I n,t,q,q1,b=0; UC* wv;
 }
 
 A RoutineB(J jt,A w,A prxthornuni){A z;I n,t,q,b=0; US* c2v; C4* c4v;
- ARGCHK1(w); ASSERT(1>=AR(w),EVRANK); n=AN(w); t=AT(w);
+ ARGCHK1(w); ASSERT(1>=AR(w),EVRANK); n=AN(w); t=AT(w); I wr=AR(w);
  ASSERT(t&C2T,EVDOMAIN);
- if(!n) {GATV(z,C2T,n,AR(w),AS(w)); R z;}; // empty C2T list 
+ if(!n) {GATV(z,C2T,n,wr,AS(w)); R z;}; // empty C2T list 
  q=wtousize(USAV(w),n);
  if(q<0||q!=n){
-  GATV(z,C4T,n,AR(w),AS(w));
-  c4v=C4AV(z);
+  GATV(z,C4T,n,wr,AS(w));
+  c4v=C4AVn(wr,z);
   c2v=USAV(w);
   DQ(n, *c4v++=(C4)*c2v++;);
   R RoutineC(jt,z,prxthornuni);
@@ -444,7 +444,7 @@ A RoutineC(J jt,A w,A prxthornuni){A z;I n,t,q,b=0; C4* wv;
  if(b){
  q=utousize(C4AV(w),n);
  GATV0(z,C4T,q,1);
- utou(C4AV(w),n,C4AV(z));
+ utou(C4AV(w),n,C4AV1(z));
  if(BAV(prxthornuni)[0]&1)R utounull(jt,z); else R z;
  }
  if(BAV(prxthornuni)[0]&1)R utounull(jt,w);
@@ -463,14 +463,14 @@ if(t&C4T)
  if(BAV(prxthornuni)[0]&1){
  q=utomnullsize(C4AV(w),n);
  GATV0(z,LIT,q,1);
- utomnull(C4AV(w),n,UAV(z));
+ utomnull(C4AV(w),n,UAV1(z));
  }
  else
  {
  q=utomsize(C4AV(w),n);
  q=(q<0)?(-q):q;
  GATV0(z,LIT,q,1);
- utom(C4AV(w),n,UAV(z));
+ utom(C4AV(w),n,UAV1(z));
  }
 }
 else
@@ -478,14 +478,14 @@ else
  if(BAV(prxthornuni)[0]&1){
  q=wtomnullsize(USAV(w),n);
  GATV0(z,LIT,q,1);
- wtomnull(USAV(w),n,UAV(z));
+ wtomnull(USAV(w),n,UAV1(z));
  }
  else
  {
  q=wtomsize(USAV(w),n);
  q=(q<0)?(-q):q;
  GATV0(z,LIT,q,1);
- wtom(USAV(w),n,UAV(z));
+ wtom(USAV(w),n,UAV1(z));
  }
 }
 R z;
@@ -501,14 +501,14 @@ I stringdisplaywidth(J jt, I c2, void*src, I nsrc){I n=nsrc,q;A c4;C4*u;
  default:
   q=mtousize(src,nsrc);
   q=(q<0)?-q:q;
-  GATV0(c4,C4T,q,1); u=C4AV(c4);
+  GATV0(c4,C4T,q,1); u=C4AV1(c4);
   mtou(src,nsrc,u);
   n=q; DO(q, if(u[i])n+=extrawidth(u[i]);else n--;);
   break;
  case 1:
   q=wtousize(src,nsrc);
   q=(q<0)?-q:q;
-  GATV0(c4,C4T,q,1); u=C4AV(c4);
+  GATV0(c4,C4T,q,1); u=C4AV1(c4);
   wtou(src,nsrc,u);
   n=q; DO(q, if(u[i])n+=extrawidth(u[i]);else n--;);
   break;

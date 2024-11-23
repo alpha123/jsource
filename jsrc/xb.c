@@ -281,7 +281,7 @@ static C*jtbrephdr(J jt,B b,B d,A w,A y){R jtbrephdrq(jt,b,d,w,CAV(y));}
 static A jtbreps(J jt,B b,B d,A w){A q,y,z,*zv;C*v;I c=0,kk,m,n;P*wp;
  wp=PAV(w);
  n=1+sizeof(P)/SZI; kk=WS(d);
- GATV0(z,BOX,n,1); zv=AAV(z);
+ GATV0(z,BOX,n,1); zv=AAV1(z);
  GATV0(y,LIT,bsize(jt,d,1&&!ISGMP(w),INT,n,AR(w)),1);
  v=brephdr(b,d,w,y);
  RZ(mvw(v,(C*)&c,1L,BU,b,d,SY_64));  /* reserved for flag */
@@ -353,7 +353,7 @@ static A jtbrep(J jt,B b,B d,A w){
  I t=AT(w); 
  if(unlikely(ISSPARSE(t)))R breps(b,d,w);  // sparse separately
  A y;I sz=bsizer(jt,d,1,w);GATV0(y,LIT,sz,1); // allocate entire result
- RZ(jtbrepfill(jt,b,d,w,CAV(y)));   // fill it
+ RZ(jtbrepfill(jt,b,d,w,CAV1(y)));   // fill it
  R y;  // return it
 }
 
@@ -361,7 +361,7 @@ static A jthrep(J jt,B b,B d,A w){A y,z;C c,*hex="0123456789abcdef",*u,*v;I n,s[
  RZ(y=brep(b,d,w));
  n=AN(y); s[0]=n>>LGWS(d); s[1]=2*WS(d); 
  GATVR(z,LIT,2*n,2,s);  
- u=CAV(y); v=CAV(z); 
+ u=CAV(y); v=CAV2(z); 
  DQ(n, c=*u++; *v++=hex[(c&0xf0)>>4]; *v++=hex[c&0x0f];); 
  RETF(z);
 }
@@ -395,7 +395,7 @@ static F1(jtunhex){A z;C*u;I c,n;UC p,q,*v;
  c=AS(w)[1];
  ASSERT(c==8||c==16,EVLENGTH);  
  n=AN(w)>>1; u=CAV(w);
- GATV0(z,LIT,n,1); v=UAV(z);
+ GATV0(z,LIT,n,1); v=UAV1(z);
  DQ(n, p=*u++; q=*u++; *v++=16*unh(p)+unh(q););
  RE(z); RETF(z);
 }
@@ -458,7 +458,7 @@ static A jtunbinr(J jt,B b,B d,B pre601,I m,A w,B g){C*u=(C*)w;
  } else {ASSERT(j==n,EVLENGTH);}
  A y; I *vv; if(t&BOX+XNUM+RAT+SPARSE){                // y: locator for values in v
   GATV0(y,INT,e,1);
-  vv=AV(y);                                            // vv: y's offsets
+  vv=AV1(y);                                            // vv: y's offsets
   RZ(mvw((C*)vv,v,e,BU,b,SY_64,d));}
  if(t&BOX+XNUM+RAT){
   RZ(y=indexof(y,y));                                  // now y is indices in v[]
@@ -736,7 +736,7 @@ F1(jtisnan){A*wv,z;B*u;D*v;I n,t;
  ARGCHK1(w);
  n=AN(w); t=AT(w);
  ASSERT(!ISSPARSE(t),EVNONCE);
- GATV(z,B01,n,AR(w),AS(w)); u=BAV(z);
+ I zr=AR(w); GATV(z,B01,n,AR(w),AS(w)); u=BAVn(zr,z);
  if (t&FL){v=DAV(w); DQ(n, *u++=_isnan(*v++););}  // float - check each atom
  else if(t&CMPX){v=DAV(w); DQ(n, *u++=_isnan(v[0])|_isnan(v[1]); v+=2;);}  // complex - check each half
  else if(t&BOX){wv=AAV(w); DO(n, *u++=isnanq(C(wv[i]));); RE(0);}  // boxed - check contents

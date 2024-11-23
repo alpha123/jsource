@@ -29,7 +29,7 @@ static F1(jtvtokens){A t,*y,z;I n,*s;TA*x;
  RZ(t=tokens(vs(w),0)); n=AN(t); y=AAV(t);
  I tmonad=1; 
  GATV0(z,BOX,WTA*(5+n),2); s=AS(z); *s++=5+n; *s=WTA;
- x=(TA*)AV(z);
+ x=(TA*)AV2(z);
  x->a=mark; x->t=0; ++x;
  DQ(n, x->a=t=QCWORD(*y++); x->t=0; ++x; if(AT(t)&NAME&&NAV(t)->flag&NMDOT&&NAV(t)->s[0]=='x')tmonad=0;);  // clear monad flag if x seen
  x->a=mark; x->t=0; ++x;
@@ -43,7 +43,7 @@ static F1(jtvtokens){A t,*y,z;I n,*s;TA*x;
 static F1(jtcfn){I j; R !AR(w)&&INT&AT(w)&&(j=AV(w)[0],-9<=j&&j<=9)?FCONS(w):qq(w,ainf);}
      /* constant function with value w */
 
-static A jttine(J jt,A w,I tmonad){V*v; R w&&tmonad&&(v=FAV(w),v->id==CFORK&&(v->fgh[2]?v->fgh[0]:CP)==CP&&RT==(v->fgh[2]?v->fgh[2]:v->fgh[1]))?(v->fgh[2]?v->fgh[1]:v->fgh[0]):w;}
+static A jttine(J jt,A w,I tmonad){V*v; R w&&AT(w)&VERB&&tmonad&&(v=FAV(w),v->id==CFORK&&(v->fgh[2]?v->fgh[0]:CP)==CP&&RT==(v->fgh[2]?v->fgh[2]:v->fgh[1]))?(v->fgh[2]?v->fgh[1]:v->fgh[0]):w;}
      /* if monad and w = [: g ], then g; else just w itself */
 
 // type of special verb coded as n"_1 where n>TC; returns n-TC if special, otherwise _1
@@ -240,7 +240,8 @@ F1(jtvtrans){PROLOG(0053);A locsyms,y,z=0;I c,i,ttabi;TA ttab[NTTAB];
   ttabi=c;
   RZ(locsyms=stcreate(2,40,0L,0L)); AR(locsyms)&=~ARLOCALTABLE;  // not necessary to set global pointers; flag table so we don't switch to locsyms during assignment
   symbis(mnuvxynam[5],num(1),locsyms); if(!tmonad)symbis(mnuvxynam[4],num(1),locsyms); 
-  z=jttparse(jt,y,locsyms,tmonad,0==i,ttab,&ttabi,c); RESETERR;
+  WITHMSGSOFF(z=jttparse(jt,y,locsyms,tmonad,0==i,ttab,&ttabi,c);)
+// obsolete  RESETERR;
   if(i&&!z)z=colon(num(4-tmonad),w);
  }
  EPILOG(z);

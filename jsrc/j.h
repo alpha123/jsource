@@ -145,6 +145,8 @@
 
 #if defined(__aarch64__)||defined(_M_ARM64)
 #if EMU_AVX2
+#undef SSE2NEON_SUPPRESS_WARNINGS
+#define SSE2NEON_SUPPRESS_WARNINGS
 #include <stdint.h>
 #include <string.h>
 #include "sse2neon.h"
@@ -725,7 +727,7 @@ struct jtimespec jmtfclk(void); //'fast clock'; maybe less inaccurate; intended 
 
 #define TOOMANYATOMSX 47  // more atoms than this is considered overflow (64-bit).  i.-family can't handle more than 2G cells in array.
 
-#define MINVIRTSIZE 32  // must have this many atoms to be virtual.  This is just a suggestion, and not honoroed everywhere
+#define MINVIRTSIZE 32  // must have this many atoms to be virtual.  This is just a suggestion, and not honored everywhere
    // Whether we should do so is a tricky question.  Surely, if the argument is big, since we may save a large indexed copy.
    // If the argument is small, the virtual is still better if it doesn't have to be realized; but it might be
    // realized in effect if it is unavailable for inplacing.  OTOH, if the argument is indirect the virtual does
@@ -738,7 +740,7 @@ struct jtimespec jmtfclk(void); //'fast clock'; maybe less inaccurate; intended 
 
 // Use MEMAUDIT to sniff out errant memory alloc/free
 #ifndef MEMAUDIT
-#define MEMAUDIT 0x00   // Bitmask for memory audits: 
+#define MEMAUDIT 0x0   // Bitmask for memory audits: 
 //        1:  make sure chains are valid (check headers)
 //        2:  full audit of tpush/tpop
 //            detect double-frees before they happen,
@@ -942,7 +944,7 @@ struct jtimespec jmtfclk(void); //'fast clock'; maybe less inaccurate; intended 
 #define ASSERTMTV(w)    {ARGCHK1(w); ASSERT(1==AR(w),EVRANK); ASSERT(!AN(w),EVLENGTH);}
 #define ASSERTN(b,e,nm) {if(unlikely(!(b))){jtjsignale(jt,(e)|EMSGLINEISNAME|EMSGNOMSGLINE,(nm),0); R 0;}}  // signal error, overriding the running name with a different one
 #define ASSERTNGOTO(b,e,nm,lbl) {if(unlikely(!(b))){jtjsignale(jt,(e)|EMSGLINEISNAME|EMSGNOMSGLINE,(nm),0); goto lbl;}}  // same, but without the exit
-#define ASSERTPYX(e)   {jsignal((e)|(EMSGFROMPYX|EMSGNOEFORMAT)); R 0;}
+#define ASSERTPYX(e,line)   {jtjsignale(jt,(e)|(EMSGFROMPYX|EMSGNOEFORMAT|EMSGNOMSGLINE),line,0); R 0;}
 #define ASSERTSYSCOMMON(b,s,stmt)  {if(unlikely(!(b))){fprintf(stderr,"system error: %s : file %s line %d\n",s,__FILE__,__LINE__); jsignal(EVSYSTEM); jtwri(JJTOJ(jt),MTYOSYS,"",(I)strlen(s),s); stmt}}
 #define ASSERTSYS(b,s)  ASSERTSYSCOMMON(b,s,R 0;)
 #define ASSERTSYSV(b,s) ASSERTSYSCOMMON(b,s,)
@@ -1598,6 +1600,7 @@ if(likely(!((I)jtinplace&JTWILLBEOPENED)))z=EPILOGNORET(z); RETF(z); \
 #define IX(n)           apv((n),0L,1L)
 #define JATTN           {if(unlikely(JT(jt,adbreakr)[0]!=0)){jsignal(EVATTN); R 0;}}   // requests orderly termination at start of sentence
 #define JBREAK0         {if(unlikely(2<=JT(jt,adbreakr)[0])){jsignal(EVBREAK); R 0;}}  // requests immediate stop
+#define JNAN  (DAV0(ds(CUSDOT))[0])  // system-supplied NAN has trouble in Windows SDKs.  We wire one into _. and refer to it this way
 #define JTIPA           ((J)((I)jt|JTINPLACEA))
 #define JTIPAW          ((J)((I)jt|JTINPLACEA+JTINPLACEW))
 #define JTIPW           ((J)((I)jt|JTINPLACEW))
@@ -2213,7 +2216,7 @@ if(unlikely(!_mm256_testz_pd(sgnbit,mantis0))){  /* if mantissa exactly 0, must 
 #define VAL1            '\001'
 #define VAL2            '\002'
 // like vec(INT,n,v), but without the call and using shape-copy
-#define VECI(z,n,v) {GATV0(z,INT,(I)(n),1); MCISH(IAV1(z),(v),(I)(n));}
+#define VECI(z,n,v) {if(n==0)z=mtvi; else{GATV0(z,INT,(I)(n),1); MCISH(IAV1(z),(v),(I)(n));}}
 #define PUSHNOMSGS C _e=jt->emsgstate; jt->emsgstate|=EMSGSTATEFORMATTED;  // turn off message formatting by pretending we've already done it
 #define POPMSGS jt->emsgstate=_e;  // restore previous state
 #define WITHMSGSOFF(stmt) {PUSHNOMSGS stmt POPMSGS}  // execute stmt with msgs off - we don't even set jt->jerr.  Use only around internal functions
