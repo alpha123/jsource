@@ -303,7 +303,7 @@ win=. mac < (1 e. 'win'&E.) &> pfm
 select. UNAME
 case. 'Win' do.
   zps=. win # zps
-case. 'Linux';'OpenBSD';'FreeBSD' do.
+case. 'Linux';'OpenBSD';'FreeBSD';'QNX' do.
   zps=. lnx # zps
 case. 'Android' do.
   zps=. and # zps
@@ -417,7 +417,7 @@ if. IFUNIX do.
     'file dir'=. y
     if. (i.0 0) -: tar 'x';file;dir do. e=. '' end.
   else.
-    e=. shellcmd 'tar ',((IFIOS+:UNAME-:'Android')#(((<UNAME)e.'Darwin';'OpenBSD';'FreeBSD'){::'--no-same-owner --no-same-permissions';'-o -p')),' -xzf ',file,' -C ',dir
+    e=. shellcmd 'tar ',((IFIOS+:UNAME-:'Android')#(((<UNAME)e.'Darwin';'OpenBSD';'FreeBSD';'QNX'){::'--no-same-owner --no-same-permissions';'-o -p')),' -xzf ',file,' -C ',dir
   end.
   if. ('/usr/'-:5{.dir-.'"') *. ('root'-:2!:5'USER') +. (<2!:5'HOME') e. 0;'/var/root';'/root';'';,'/' do.
     shellcmd ::0: 'find ',dir,' -type d -exec chmod a+rx {} \+'
@@ -889,7 +889,7 @@ echo LF,'ALL DONE!',LF,'exit this J session and start new session with double cl
 i.0 0
 )
 shortcut=: 3 : 0
-if. ((<UNAME)e.'OpenBSD';'FreeBSD') do. uname=. 'Linux' else. uname=. UNAME end.
+if. ((<UNAME)e.'OpenBSD';'FreeBSD';'QNX') do. uname=. 'Linux' else. uname=. UNAME end.
 try. ".uname,' y' catchd. echo 'create ',y,' launch icon failed' end.
 )
 
@@ -899,7 +899,7 @@ L=: hostpathsep jpath'~/Desktop/'
 W=: hostpathsep jpath'~'
 I=: hostpathsep jpath'~bin/icons/'
 N=: RELNO
-DS=: ;(('Win';'Linux';'OpenBSD';'FreeBSD';'Darwin')i.<UNAME){'.lnk';'.desktop';'.desktop';'.desktop';'.app'
+DS=: ;(('Win';'Linux';'OpenBSD';'FreeBSD';'QNX';'Darwin')i.<UNAME){'.lnk';'.desktop';'.desktop';'.desktop';'.desktop';'.app'
 LIB=: ''
 )
 vbs=: 0 : 0
@@ -1656,7 +1656,7 @@ suffix=. IFUNIX{::'dll';('Darwin'-:UNAME){::'so';'dylib'
 vsuffix=. IFUNIX{::(JQTVERSION,'.dll');('Darwin'-:UNAME){::('so.',JQTVERSION);(JQTVERSION,'.dylib')
 smoutput 'Installing ',bin,'..'
 
-if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD') do.
+if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD';'QNX') do.
   if. IFRASPI do.
     z=. 'jqt-raspberry',((-.IF64)#'-arm32'),((y-:'slim')#'-slim'),'.tar.gz'
   else.
@@ -1681,7 +1681,7 @@ if. IFWIN do.
   unzip_jpacman_ p;d
 else.
   if. FHS do.
-    if. (<UNAME)e.'Darwin';'OpenBSD';'FreeBSD' do.
+    if. (<UNAME)e.'Darwin';'OpenBSD';'FreeBSD';'QNX' do.
       d1=. (({.~ i:&'/')BINPATH),'/lib/'
     elseif. IFRASPI do.
       d1=. (({.~ i:&'/')BINPATH),IF64{::'/lib/arm-linux-gnueabihf/';'/lib/aarch64-linux-gnu/'
@@ -1710,7 +1710,7 @@ else.
   m=. m,'check that you have write permission for: ',LF,BINPATH
 end.
 smoutput m
-if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD') do.
+if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD';'QNX') do.
   qt_ldd_test d1
   smoutput 'If libjqt cannot be loaded, see this guide for installing the Qt library'
   smoutput 'https://code.jsoftware.com/wiki/Guides/Linux_Installation'
@@ -1759,7 +1759,7 @@ libname=. IFUNIX{::('mpir.',suffix);'libgmp.',suffix
 libjname=. IFUNIX{::('mpir.',suffix);'libjgmp.',suffix
 if. ''-:1!:46'' do.
   if. FHS do.
-    if. (<UNAME)e.'Darwin';'OpenBSD';'FreeBSD' do.
+    if. (<UNAME)e.'Darwin';'OpenBSD';'FreeBSD';'QNX' do.
       dest=. (({.~ i:&'/')BINPATH),'/lib/'
     elseif. IFRASPI do.
       dest=. (({.~ i:&'/')BINPATH),IF64{::'/lib/arm-linux-gnueabihf/';'/lib/aarch64-linux-gnu/'
@@ -1778,7 +1778,7 @@ if. fexist f=. dest, FHS{::libname;libjname do.
   smoutput f,' already exists' return.
 end.
 smoutput 'Installing ',bin,'..'
-if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD') do.
+if. ((<UNAME)e.'Linux';'OpenBSD';'FreeBSD';'QNX') do.
   arch=. (#.IF64,~'x86'-:3{.9!:56'cpu'){::'arm';'aarch64';'i386';'x86_64'
   z=. libname,~ (tolower UNAME),'/',arch,'/'
 elseif. IFWIN do.
