@@ -617,6 +617,8 @@ struct jtimespec jmtfclk(void); //'fast clock'; maybe less inaccurate; intended 
 #else
 #if (defined(ANDROID) && !defined(__LP64__)) || (defined(__OpenBSD__) && defined(__aarch64__))
 #define CSTACKSIZE      (SY_64?4194304:1015808)  // OS default stack size 4MB, aligned to 16k system page size
+#elif defined(__QNX__)
+#define CSTACKSIZE      (262144)  // OS default stack size is 512KB for the main thread but 256KB for other threads
 #else
 #define CSTACKSIZE      (SY_64?7946240:1015808)  // OS default stack size 8MB, aligned to 16k system page size
 #endif
