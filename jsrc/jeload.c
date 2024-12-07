@@ -424,7 +424,7 @@ int jefirst(int type,char* arg)
 #elif defined(__OpenBSD__)
 	strcat(input,"[UNAME_z_=:'OpenBSD'");
 #elif defined(__QNX__)
-	strcat(input,"[UNAME_z_=:'QNX']");
+	strcat(input,"[UNAME_z_=:'QNX'");
 #elif !defined(ANDROID)
 	strcat(input,"[UNAME_z_=:'Linux'");
 #endif
