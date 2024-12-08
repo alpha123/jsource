@@ -22,7 +22,7 @@ case. 'Win' do.
   closesocketJ=: 'closesocket i i' scdm
   ioctlsocketJ=: 'ioctlsocket i i i *i' scdm
 case. do.
-  c=. unxlib 'c'
+  c=. >('QNX'-.@-:UNAME){'libsocket.so.4';unxlib 'c'
   ccdm=: 1 : ('(''"',c,'" '',u)&(15!:0)')
   ncdm=: ccdm
   scdm=: ccdm
